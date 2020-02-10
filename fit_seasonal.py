@@ -36,9 +36,7 @@ def run_SIR(X, tmax, dt):
 
     return np.array(tSI)
 
-def cost(X, prevalence, plot=False):
-    dt = 0.001
-    traj = run_SIR(X, 30, dt)
+def cost(traj, prevalence, plot=False, dt=0.001):
     avg = np.mean(np.array([[traj[-int((y+(11.5-m)/12)/dt),2] for y in range(10)]
             for m in range(12)]), axis=1)
 
@@ -46,7 +44,7 @@ def cost(X, prevalence, plot=False):
     if plot:
         plt.plot(avg/avg.mean())
         plt.plot(prevalence/prevalence.mean())
-    print(X, C)
+    print(C)
     return C
 
 if __name__ == '__main__':
@@ -58,38 +56,46 @@ if __name__ == '__main__':
 
     R0 = 3
     rec = 52
-    influx = 1e-3
     eps = 0.5
+    phi = -0.15
+    influx = 1e-3
     turnover = 0.1 # rate at which people turn susceptible (0.1 corresponds to once every 10 years)
-    X0 = (R0, eps, 1.0, rec, influx, turnover)
+    dt=0.001
+    tmax = 30
 
-    traj = run_SIR(X0, 30, 0.001)
-    cost(X0, df["all CoVs"])
-    plt.plot(traj[3000:,0], traj[3000:,2])
+    X0 = (R0*rec, eps, phi, rec, influx, turnover)
+    traj = run_SIR(X0, tmax, dt=dt)
+    prevalence = df["all CoVs"]
+    cost(traj, prevalence, dt=dt)
+    plt.plot(traj[-3000:,0], traj[-3000:,2])
     plt.ylim([0,0.003])
 
+    phi_vals = [-0.2, 0.1, 0, 0.1, 0.2]
     R0_vals = [1.5,2.5,4]
     influx_vals =  [1e-4, 3e-4, 1e-3, 3e-3, 1e-2, 3e-2]
     eps_vals = np.linspace(0,0.8,9)
     amplitudes = []
     means = []
-    for R0, influx, eps in product(R0_vals, influx_vals, eps_vals):
-        X= (R0*rec, eps, 0.0, rec, influx, turnover)
-        traj = run_SIR(X, 30, 0.001)
+    costs = []
+    for phi, R0, influx, eps in product(phi_vals, R0_vals, influx_vals, eps_vals):
+        X= (R0*rec, eps, phi, rec, influx, turnover)
+        traj = run_SIR(X, tmax, dt)
         num_points = len(traj)
         print(R0, influx, eps, np.mean(traj[num_points//2:,2]))
         # amplitudes.append(np.std(traj[num_points//2:,2])/np.mean(traj[num_points//2:,2]))
         amplitudes.append(np.max(traj[3*num_points//4:,2])/np.min(traj[3*num_points//4:,2]))
         means.append(np.mean(traj[num_points//2:,2]))
+        costs.append(cost(traj, prevalence, dt=dt))
 
 
-    amplitudes = np.reshape(amplitudes, (len(R0_vals), len(influx_vals), len(eps_vals)))
-    means = np.reshape(means, (len(R0_vals), len(influx_vals), len(eps_vals)))
+    amplitudes = np.reshape(amplitudes, (len(phi_vals), len(R0_vals), len(influx_vals), len(eps_vals)))
+    means = np.reshape(means, (len(phi_vals), len(R0_vals), len(influx_vals), len(eps_vals)))
+    costs = np.reshape(costs, (len(phi_vals), len(R0_vals), len(influx_vals), len(eps_vals)))
 
     for ri, R0 in enumerate(R0_vals):
         plt.figure()
         plt.title(f'log10(max/min) of incidence, R0={R0}')
-        sns.heatmap(np.log10(amplitudes[ri]), xticklabels=[f"{x:1.1f}" for x in eps_vals],
+        sns.heatmap(np.log10(amplitudes[2][ri]), xticklabels=[f"{x:1.1f}" for x in eps_vals],
                     yticklabels=[f"{x:1.1e}" for x in influx_vals])
         plt.tick_params('y', rotation=0)
         plt.ylabel('import rate')
@@ -97,8 +103,23 @@ if __name__ == '__main__':
         plt.tight_layout()
         plt.savefig(f"figures/oscillations_{R0}.pdf")
 
+    for ri, R0 in enumerate(R0_vals):
+        plt.figure()
+        sns.heatmap(1/costs.min(axis=0)[ri], xticklabels=[f"{x:1.1f}" for x in eps_vals],
+                    yticklabels=[f"{x:1.1e}" for x in influx_vals], vmax=1)
+        plt.tick_params('y', rotation=0)
+        plt.ylabel('import rate')
+        plt.xlabel('seasonality')
+        plt.tight_layout()
+        plt.savefig(f"figures/fit_{R0}.pdf")
 
-    # from scipy.optimize import minimize
 
-    # sol = minimize(cost, X0, args=np.array(df['all']), method="SLSQP",
-    #         bounds=[(1,6),(0, 0.9), (0.3,1.7), (10,100), (-4,-1)])
+    for ri, R0 in enumerate(R0_vals):
+        plt.figure()
+        sns.heatmap(costs.argmin(axis=0)[ri], xticklabels=[f"{x:1.1f}" for x in eps_vals],
+                    yticklabels=[f"{x:1.1e}" for x in influx_vals])
+        plt.tick_params('y', rotation=0)
+        plt.ylabel('import rate')
+        plt.xlabel('seasonality')
+        plt.tight_layout()
+
