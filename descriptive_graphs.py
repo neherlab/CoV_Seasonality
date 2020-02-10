@@ -22,7 +22,15 @@ df.loc[df["age"]>150, "age"] = np.nan
 
 # split into different tests
 tests = np.unique(df["test"])
-data_by_test = {t:df.loc[df["test"]==t,:] for t in tests}
+data_by_test = {}
+
+data_by_test['Coronavirus 229E'] = df.loc[df["test"]=='Coronavirus 229E-RNA']
+data_by_test['Coronavirus NL63'] = df.loc[df["test"]=='Coronavirus NL63-RNA']
+data_by_test['Coronavirus HKU1/OC43'] = df.loc[(df["test"]=='Coronavirus HKU1-RNA')\
+                                               |(df["test"]=='Coronavirus OC43-, HKU1-RNA')\
+                                               |(df["test"]=='Coronavirus OC43-RNA')]
+
+# data_by_test = {t:df.loc[df["test"]==t,:] for t in tests}
 data_by_test['all'] = df
 number_of_tests = {t:{"total": len(d), "positive":np.sum(d["pos/neg"]==1.0)}
                    for t,d in data_by_test.items()}
@@ -83,10 +91,18 @@ plt.ylabel('fraction positive tests')
 plt.savefig('figures/pos_frac_vs_time.pdf')
 
 plt.figure()
+frac_positive = []
 for t,d in data_by_test.items():
     x = d.groupby(by=lambda x:d.loc[x,'admission_date'].month).mean()
+    frac_positive.append([t, list(x["pos/neg"])])
     time_ax = [i for i in x.index]
     plt.plot(time_ax, x["pos/neg"], 'o-', label=t)
+
+with open("frac_positive_by_month.tsv", 'w') as fh:
+    fh.write("month\t"+'\t'.join(x[0] for x in frac_positive)+'\n')
+    for m in range(12):
+        fh.write(f"{m}\t"+'\t'.join(str(x[1][m]) for x in frac_positive)+'\n')
+
 
 plt.legend()
 plt.xlabel('month')
