@@ -102,7 +102,7 @@ if __name__ == '__main__':
         if pi==0:
             label = 'Hubei'
         elif params[pi][5]==0:
-            label = 'tropical'
+            label = 'Tropical'
         elif params[pi][5]==1:
             label = 'North'
         elif params[pi][5]==-1:
@@ -114,21 +114,57 @@ if __name__ == '__main__':
             return label
 
     fs=16
-    plt.figure()
-    plt.plot(t, total_inf, lw=3, label='Total')
+    plt.figure(1, figsize=(14,5))
+    ax1 = plt.subplot(131) #north
+    ax2 = plt.subplot(132) #tropical
+    ax3 = plt.subplot(133) #south
+    ax1.plot(t, total_inf, lw=3, label='Total')
+    ax2.plot(t, total_inf, lw=3, label='Total')
+    ax3.plot(t, total_inf, lw=3, label='Total')
 
-    for pi in range(50):
-        plt.plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
+    for pi in range(100):
+        if pi==0: #plot hubei with north
+            ax1.plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
                  c=get_color(pi), label=get_label(pi))
+        elif params[pi][5]==0: #tropical
+            ax2.plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
+                 c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/5)
+        elif params[pi][5]==1: #north
+            ax1.plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
+                 c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/5)
+        elif params[pi][5]==-1: # south
+            ax3.plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
+                 c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/5)
 
-    plt.legend(fontsize=fs*0.8, loc=8, ncol=2)
-    plt.yscale('log')
-    plt.ylabel('Cases', fontsize=fs)
-    plt.xticks(np.array([2020, 2020.5, 2021, 2021.5, 2022]),
-               ['2020-01', '2020-04', '2020-07', '2020-10', '2021-01', '2021-04'])
-    plt.tick_params(labelsize=0.8*fs)
-    plt.xticks(rotation=30, horizontalalignment='right')
-    plt.ylim([0.1,total_inf[:].max()*2])
+        #print("beta is {} r0 is {}".format(params[pi,1], params[pi,1]/rec)) #debug
+
+    ax1.legend(fontsize=fs*0.8, loc=8, ncol=1)
+    ax1.set_yscale('log')
+    ax1.set_ylabel('Cases', fontsize=fs)
+    ax1.set_xticks(np.array([2020, 2020.5, 2021, 2021.5, 2022]),
+            ['2020-01', '2020-04', '2020-07', '2020-10', '2021-01', '2021-04'])
+    ax1.tick_params(axis='x', labelsize=0.8*fs, labelrotation=30)
+    ax1.set_xticklabels(ax1.get_xticks(), horizontalalignment='right')
+    ax1.set_ylim([0.1,total_inf[:].max()*2])
+
+    ax2.legend(fontsize=fs*0.8, loc=8, ncol=1)
+    ax2.set_yscale('log')
+    ax2.set_ylabel('Cases', fontsize=fs)
+    ax2.set_xticks(np.array([2020, 2020.5, 2021, 2021.5, 2022]),
+            ['2020-01', '2020-04', '2020-07', '2020-10', '2021-01', '2021-04'])
+    ax2.tick_params(axis='x', labelsize=0.8*fs, labelrotation=30)
+    ax2.set_xticklabels(ax2.get_xticks(), horizontalalignment='right')
+    ax2.set_ylim([0.1,total_inf[:].max()*2])
+
+    ax3.legend(fontsize=fs*0.8, loc=8, ncol=1)
+    ax3.set_yscale('log')
+    ax3.set_ylabel('Cases', fontsize=fs)
+    ax3.set_xticks(np.array([2020, 2020.5, 2021, 2021.5, 2022]),
+            ['2020-01', '2020-04', '2020-07', '2020-10', '2021-01', '2021-04'])
+    ax3.tick_params(axis='x', labelsize=0.8*fs, labelrotation=30)
+    ax3.set_xticklabels(ax3.get_xticks(), horizontalalignment='right')
+    ax3.set_ylim([0.1,total_inf[:].max()*2])
+
     plt.tight_layout()
-    plt.savefig('figures/global.pdf')
+    plt.savefig('figures/global_3_panel.pdf')
 
