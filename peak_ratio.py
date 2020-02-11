@@ -24,20 +24,24 @@ if __name__ == '__main__':
     rec = 36   # 10 day serial interval
     migration = 1e-3 # rate of moveing per year
     N0,N1 = 1e7,1e8
-    eps0 = 0.5
+    eps_hubei = 0.5
+    R0_hubei = 2.0
     eps = 0.5
+    containment_hubei = 0.5
+    containment_NH = 0.5
+    theta_hubei = 0.0
 
     R0_vals = np.linspace(1.5,3,14)
     theta_vals = np.array([10, 10.5, 11, 11.5, 0, 0.5, 1, 1.5, 2, 2.5])/12
     for eps in [0.3, 0.5, 0.7]:
         ratio = []
         for R0 in R0_vals:
-            for theta in theta_vals:
+            for theta_NH in theta_vals:
                 print(R0,theta)
                 # initially fully susceptible with one case in Hubei, no cases in NH
                 populations = [np.array([[1, 1/N0], [1,0]])]
-                params = np.array([[N0, 2*rec, rec, eps0, 0.0, 1, 0.5],
-                                   [N1, R0*rec, rec, eps, theta, 1, 0.5]])
+                params = np.array([[N0, R0_hubei*rec, rec, eps_hubei, theta_hubei, 1, containment_hubei],
+                                   [N1, R0*rec, rec, eps, theta_NH, 1, containment_NH]])
 
                 n_pops = len(params)
 
@@ -77,9 +81,9 @@ if __name__ == '__main__':
         plt.title('Ratio of first to second peak', fontsize=fs)
         iax = ax.imshow(np.minimum(np.maximum(np.log10(ratio), -3), 3),
                         interpolation='nearest', cmap='seismic', aspect='auto')
-        cbar = fig.colorbar(iax, label='Ratio of first to second peak', ticks=cbar_ticks)
+        cbar = fig.colorbar(iax, ticks=cbar_ticks)
         cbar.ax.set_yticklabels([r"$10^{"+str(x)+"}$" for x in cbar_ticks])
-        # cbar.ax.set_ylabel('Ratio of first to second peak', fontsize=fs)
+        cbar.ax.set_ylabel('Ratio of first to second peak', fontsize=fs)
         cbar.ax.tick_params('y', labelsize=0.8*fs)
         plt.yticks(np.arange(0,len(R0_vals),2),[f"{x:1.1f}" for x in R0_vals[::2]], rotation=0)
         plt.xticks(np.arange(0,len(theta_vals),2),[f"{month_lookup[int(x*12-0.5)]}" for x in theta_vals[1::2]])

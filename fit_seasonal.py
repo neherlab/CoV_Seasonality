@@ -112,7 +112,7 @@ if __name__ == '__main__':
         cbar.ax.tick_params('y', labelsize=0.8*fs)
 
         plt.xticks(np.arange(0,len(eps_vals),2), [f"{x:1.1f}" for x in eps_vals[::2]])
-        plt.yticks(np.arange(len(influx_vals)-1,-1,-2), [f"{x:1.1e}" for x in influx_vals], rotation=0)
+        plt.yticks(np.arange(len(influx_vals)-1,-1,-2), [f"{x:1.1e}" for x in influx_vals[::2]], rotation=0)
         plt.ylabel('import rate', fontsize=fs)
         plt.xlabel('seasonality', fontsize=fs)
         plt.tick_params(labelsize=fs*0.8)
@@ -128,4 +128,5 @@ if __name__ == '__main__':
         plt.ylabel('import rate')
         plt.xlabel('seasonality')
         plt.tight_layout()
+        plt.savefig(f"figures/theta_{R0}.pdf")
 

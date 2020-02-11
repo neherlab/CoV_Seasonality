@@ -1,3 +1,4 @@
+import pandas as pd
 import numpy as np
 from scipy.stats import poisson
 import matplotlib.pyplot as plt
@@ -20,7 +21,7 @@ def dSIRdt_vec(S, I, t, params, turnover=0):
     return dS, dI
 
 
-def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
+def plot_many_population_scenario(R0=2, t0=2019.9, eps_temperate=0.5, eps_tropical=0.2):
     #R0 = 2     # together with eps0=0.5, this corresponds to 2.5 in winter
     rec = 36   # 10 day serial interval
     N0 = 1e7   # size of Wuhan
@@ -33,12 +34,13 @@ def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
     containment_hubei = 0.5 # containment value for hubei. Strong containment measures in Hubei
     containment_world_range = 0.5 # assumes uniform distribution between no containment and 0.5 in other regions
     theta_temperate_sigma = 0.1  # standard deviation of the distribution of peak x-missibility in temperate regions
-
+    regions = {"Northern":1, "Tropical":0,  "Southern":-1}
     population_turnover = 0.0 # rate at which people become susceptible again.
+    under_reporting = 10
 
     #total number of populations
     n_pops = 1000
-
+    case_counts = pd.read_csv('data/case_counts.tsv', sep='\t')
     # add Hubei population with parameters specified above
     #          population size, beta, rec, eps, theta, NH, containment, relative migration
     params = [[N0, R0*rec, rec, eps0, theta0, 1, containment_hubei, 1.0]]
@@ -48,16 +50,16 @@ def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
     # construct other populations
     for i in range(n_pops-1):
         tmp = np.random.random() # draw NH, SH, tropical
-        if tmp<0.5:
-            climate = 0 #tropical
+        if tmp<0.4: # according to http://worldpopulationreview.com/countries/tropical-countries/
+            climate = regions["Tropical"]
             eps = np.random.random()*eps_tropical
             theta = np.random.random()
-        elif tmp<0.85:
-            climate = 1 # northern
+        elif tmp<0.9: # 90% live in the northern hemisphere
+            climate = regions["Northern"]
             eps = np.random.random()*eps_temperate
             theta = np.random.normal(0,theta_temperate_sigma)  # peak in Dec/Jan
         else:
-            climate = -1
+            climate = regions["Southern"]
             eps = np.random.random()*eps_temperate
             theta = np.random.normal(0.5,theta_temperate_sigma) # peak in June/July
 
@@ -74,7 +76,7 @@ def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
     populations = [np.array(populations)]
 
     # start simulation
-    t = [2019.8]
+    t = [t0]
     dt = 0.001
     tmax = 2022
     while t[-1]<tmax:
@@ -88,22 +90,14 @@ def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
     populations = np.array(populations)
     # weigh each infection trajectory by its population size
     total_inf = (params[:,0]*populations[:,:,1]).sum(axis=1)
+    params_by_region = {r:params[params[:,5]==regions[r],:] for r in regions}
+    pops_by_region = {r:populations[:,params[:,5]==regions[r],:] for r in regions}
 
 
     #####################################################################
     ### plot figures
     #####################################################################
-    def get_color(pi):
-        if pi==0:
-            return 'C1'
-        elif params[pi][5]==0:
-            return 'C2'
-        elif params[pi][5]==1:
-            return 'C3'
-        elif params[pi][5]==-1:
-            return 'C4'
-        else:
-            return '#BBBBBB'
+    colors = {"Northern":"C1", "Southern":"C2", "Tropical":"C3", "Hubei":"C4", "Total simulation":"C0", "Total observed":"C5"}
 
     label_set = set()
     def get_label(pi):
@@ -124,33 +118,31 @@ def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
     fs=16
     fig, axs = plt.subplots(1, 3, figsize=(14,5), sharey=True)
     for ax in axs:
-        ax.plot(t, total_inf, lw=3, label='Total')
-    
+        ax.plot(t, total_inf, lw=3, label='Total', c=colors["Total simulation"])
+        ax.plot(case_counts["date"], case_counts["total"]*under_reporting,
+                lw=3, label=f'observed (x{under_reporting})', c=colors[f"Total observed"])
+
     #find max R0 to adjust colour shading when plotting lines
     maxR0 = max(params[:,1]/rec)
 
-    for pi in range(100):
-        if pi==0: #plot hubei with north
-            axs[0].plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
-                 c=get_color(pi), label=get_label(pi))
-        elif params[pi][5]==0: #tropical
-            axs[1].plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
-                 c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/maxR0)
-        elif params[pi][5]==1: #north
-            axs[0].plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
-                 c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/maxR0)
-        elif params[pi][5]==-1: # south
-            axs[2].plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
-                 c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/maxR0)
+    for ax,r in zip(axs, regions.keys()):
+        ax.plot(t, (params_by_region[r][:,0]*pops_by_region[r][:,:,1]).sum(axis=1), lw=3, label=r+" total", c=colors[r])
+        label_set = set()
+        if r=='Northern':
+            ax.plot(t, populations[:,0,1]*params[0, 0], lw=3, c=colors["Hubei"], label="Hubei")
 
-        #print("beta is {} r0 is {}".format(params[pi,1], params[pi,1]/rec)) #debug
-    cols = ['C3','C2','C4']
-    for ax,col in zip(axs,cols):
+        for pi in range(min(20, len(params_by_region[r]))):
+            ax.plot(t, pops_by_region[r][:,pi,1]*params_by_region[r][pi, 0], lw=1.5, c=colors[r],
+                    label='' if r in label_set else r, alpha=params[pi,1]/rec/maxR0)
+            label_set.add(r)
+
+
         # make custom legend to show R0 values
-        custom_lines = [Line2D([0], [0], color=col, lw=2, alpha=(1/maxR0)),
-                        Line2D([0], [0], color=col, lw=2, alpha=(R0/maxR0)),
-                        Line2D([0], [0], color=col, lw=2, alpha=1)]
-        first_legend = ax.legend(custom_lines, ["1",R0,round(maxR0,1)], title="R0")
+        custom_lines = [Line2D([0], [0], color=colors[r], lw=2, alpha=(1/maxR0)),
+                        Line2D([0], [0], color=colors[r], lw=2, alpha=(R0/maxR0)),
+                        Line2D([0], [0], color=colors[r], lw=2, alpha=1)]
+        first_legend = ax.legend(custom_lines, ["1",R0,round(maxR0,1)], title="R0", fontsize=fs*0.8, loc=4)
+        plt.setp(first_legend.get_title(),fontsize=fs)
         ax.add_artist(first_legend)
 
         ax.legend(fontsize=fs*0.8, loc=8, ncol=1)
@@ -170,5 +162,5 @@ def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
 
 if __name__ == '__main__':
 
-    for R0 in [1.5, 2.0, 3.0]:
+    for t0, R0 in zip([2019.6, 2019.9, 2020], [1.5, 2.0, 3.0]):
         plot_many_population_scenario(R0=R0)
