@@ -2,7 +2,7 @@ import numpy as np
 from scipy.stats import poisson
 import matplotlib.pyplot as plt
 
-def dSIRdt_vec(S, I, t, params):
+def dSIRdt_vec(S, I, t, params, turnover=0):
     '''
     vectorized derivative of SIR models in multiple populations.
 
@@ -13,8 +13,8 @@ def dSIRdt_vec(S, I, t, params):
 
     '''
     infection = params[:,1]*(1 - params[:,6]*I**3/(0.03**3+I**3))*S*I*(1+params[:,3]*np.cos(2*np.pi*(t - params[:,4])))
-    dS = -infection
-    dI = infection - params[:,2]*I
+    dS = -infection - turnover*(S-1)
+    dI = infection - (params[:,2]+turnover)*I
 
     return dS, dI
 
@@ -31,7 +31,9 @@ def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
     migration_sigma = 2 # standard deviation migration rate lognormal
     containment_hubei = 0.5 # containment value for hubei. Strong containment measures in Hubei
     containment_world_range = 0.5 # assumes uniform distribution between no containment and 0.5 in other regions
-    theta_temperate_sigma = 0.15  # standard deviation of the distribution of peak x-missibility in temperate regions
+    theta_temperate_sigma = 0.1  # standard deviation of the distribution of peak x-missibility in temperate regions
+
+    population_turnover = 0.0 # rate at which people become susceptible again.
 
     #total number of populations
     n_pops = 1000
@@ -74,7 +76,7 @@ def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
     dt = 0.001
     tmax = 2022
     while t[-1]<tmax:
-        dS, dI = dSIRdt_vec(populations[-1][:,0], populations[-1][:,1], t[-1], params)
+        dS, dI = dSIRdt_vec(populations[-1][:,0], populations[-1][:,1], t[-1], params, turnover=population_turnover)
         populations.append(populations[-1] + dt*np.array([dS,dI]).T)
 
         I_tot = (params[:,0]*populations[-1][:,1]).sum()
@@ -142,8 +144,8 @@ def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
         ax.set_yscale('log')
         if ax==axs[0]:
             ax.set_ylabel('Cases', fontsize=fs)
-        ax.set_xticks(np.array([2020, 2020.5, 2021, 2021.5, 2022]),
-                ['2020-01', '2020-04', '2020-07', '2020-10', '2021-01', '2021-04'])
+        ax.set_xticks(np.array([2020.05, 2020.05, 2021.05, 2021.05, 2022.05]),
+                               ['2020-01', '2020-07', '2021-01', '2021-07', '2022-01'])
         ax.tick_params(axis='x', labelsize=0.8*fs, labelrotation=30)
         ax.tick_params(axis='y', labelsize=0.8*fs)
         ax.set_xticklabels(ax.get_xticks(), horizontalalignment='right')
