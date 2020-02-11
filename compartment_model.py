@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import poisson
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
 def dSIRdt_vec(S, I, t, params, turnover=0):
     '''
@@ -20,7 +21,7 @@ def dSIRdt_vec(S, I, t, params, turnover=0):
 
 
 def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
-    R0 = 2     # together with eps0=0.5, this corresponds to 2.5 in winter
+    #R0 = 2     # together with eps0=0.5, this corresponds to 2.5 in winter
     rec = 36   # 10 day serial interval
     N0 = 1e7   # size of Wuhan
     eps0 = 0.5 # seasonality
@@ -60,7 +61,8 @@ def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
             eps = np.random.random()*eps_temperate
             theta = np.random.normal(0.5,theta_temperate_sigma) # peak in June/July
 
-        beta = np.random.normal(loc=R0, scale=1)*rec
+        # Limit R0 to have to be >= 0
+        beta = max(0, np.random.normal(loc=R0, scale=1))*rec
         relative_migration = np.random.lognormal(-migration_sigma**2/2, migration_sigma)
         N = np.random.lognormal(np.log(world_population/n_pops)-popsize_sigma**2/2,popsize_sigma)
         containment = np.random.random()*containment_world_range
@@ -123,6 +125,9 @@ def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
     fig, axs = plt.subplots(1, 3, figsize=(14,5), sharey=True)
     for ax in axs:
         ax.plot(t, total_inf, lw=3, label='Total')
+    
+    #find max R0 to adjust colour shading when plotting lines
+    maxR0 = max(params[:,1]/rec)
 
     for pi in range(100):
         if pi==0: #plot hubei with north
@@ -130,16 +135,24 @@ def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
                  c=get_color(pi), label=get_label(pi))
         elif params[pi][5]==0: #tropical
             axs[1].plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
-                 c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/5)
+                 c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/maxR0)
         elif params[pi][5]==1: #north
             axs[0].plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
-                 c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/5)
+                 c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/maxR0)
         elif params[pi][5]==-1: # south
             axs[2].plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
-                 c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/5)
+                 c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/maxR0)
 
         #print("beta is {} r0 is {}".format(params[pi,1], params[pi,1]/rec)) #debug
-    for ax in axs:
+    cols = ['C3','C2','C4']
+    for ax,col in zip(axs,cols):
+        # make custom legend to show R0 values
+        custom_lines = [Line2D([0], [0], color=col, lw=2, alpha=(1/maxR0)),
+                        Line2D([0], [0], color=col, lw=2, alpha=(R0/maxR0)),
+                        Line2D([0], [0], color=col, lw=2, alpha=1)]
+        first_legend = ax.legend(custom_lines, ["1",R0,round(maxR0,1)], title="R0")
+        ax.add_artist(first_legend)
+
         ax.legend(fontsize=fs*0.8, loc=8, ncol=1)
         ax.set_yscale('log')
         if ax==axs[0]:
