@@ -19,11 +19,9 @@ def dSIRdt_vec(S, I, t, params):
     return dS, dI
 
 
-
-if __name__ == '__main__':
-
+def plot_many_population_scenario(R0=2, eps_temperate=0.5, eps_tropical=0.2):
+    R0 = 2     # together with eps0=0.5, this corresponds to 2.5 in winter
     rec = 36   # 10 day serial interval
-    R0 = 2     # together with eps=0.5, this corresponds to 2.5 in winter
     N0 = 1e7   # size of Wuhan
     eps0 = 0.5 # seasonality
     theta0 = 0.0 # peak transmissibility in Dec/Jan
@@ -31,13 +29,16 @@ if __name__ == '__main__':
     world_population = 7.6e9
     migration = 3e-3 # rate of moving per year anywhere
     migration_sigma = 2 # standard deviation migration rate lognormal
+    containment_hubei = 0.5 # containment value for hubei. Strong containment measures in Hubei
+    containment_world_range = 0.5 # assumes uniform distribution between no containment and 0.5 in other regions
+    theta_temperate_sigma = 0.15  # standard deviation of the distribution of peak x-missibility in temperate regions
 
     #total number of populations
     n_pops = 1000
 
     # add Hubei population with parameters specified above
     #          population size, beta, rec, eps, theta, NH, containment, relative migration
-    params = [[N0, R0*rec, rec, eps0, theta0, 1, 0.5, 1.0]]
+    params = [[N0, R0*rec, rec, eps0, theta0, 1, containment_hubei, 1.0]]
     # initially fully susceptible with one case
     populations = [[1, 1/N0]]
 
@@ -46,21 +47,21 @@ if __name__ == '__main__':
         tmp = np.random.random() # draw NH, SH, tropical
         if tmp<0.5:
             climate = 0 #tropical
-            eps = np.random.random()*0.2
+            eps = np.random.random()*eps_tropical
             theta = np.random.random()
         elif tmp<0.85:
             climate = 1 # northern
-            eps = np.random.random()*0.6
-            theta = np.random.normal(0,0.15)  # peak in Dec/Jan
+            eps = np.random.random()*eps_temperate
+            theta = np.random.normal(0,theta_temperate_sigma)  # peak in Dec/Jan
         else:
             climate = -1
-            eps = np.random.random()*0.6
-            theta = np.random.normal(0.5,0.15) # peak in June/July
+            eps = np.random.random()*eps_temperate
+            theta = np.random.normal(0.5,theta_temperate_sigma) # peak in June/July
 
-        beta = np.random.normal(loc=2.0, scale=1)*rec
+        beta = np.random.normal(loc=R0, scale=1)*rec
         relative_migration = np.random.lognormal(-migration_sigma**2/2, migration_sigma)
         N = np.random.lognormal(np.log(world_population/n_pops)-popsize_sigma**2/2,popsize_sigma)
-        containment = np.random.random()*0.5
+        containment = np.random.random()*containment_world_range
         # add initially uninfected population and parameters
         populations.append([1, 0])
         params.append([N, beta, rec, eps, theta, climate, containment, relative_migration])
@@ -149,5 +150,10 @@ if __name__ == '__main__':
         ax.set_ylim([1,total_inf[:].max()*2])
 
     plt.tight_layout()
-    plt.savefig('figures/global_3_panel.pdf')
+    plt.savefig(f'figures/global_3_panel_{R0}.pdf')
 
+
+if __name__ == '__main__':
+
+    for R0 in [1.5, 2.0, 3.0]:
+        plot_many_population_scenario(R0=R0)
