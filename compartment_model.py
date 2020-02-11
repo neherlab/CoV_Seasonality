@@ -8,8 +8,8 @@ def dSIRdt_vec(S, I, t, params):
 
     S, I are vectors with one entry for each population
     t is time
-    params is an array of [[N, beta, rec, eps, theta, climate, containment],
-                           [N, beta, rec, eps, theta, climate, containment], ...]
+    params is an array of [[N, beta, rec, eps, theta, climate, containment, relative_migration],
+                           [N, beta, rec, eps, theta, climate, containment, relative_migration], ...]
 
     '''
     infection = params[:,1]*(1 - params[:,6]*I**3/(0.03**3+I**3))*S*I*(1+params[:,3]*np.cos(2*np.pi*(t - params[:,4])))
@@ -27,15 +27,17 @@ if __name__ == '__main__':
     N0 = 1e7   # size of Wuhan
     eps0 = 0.5 # seasonality
     theta0 = 0.0 # peak transmissibility in Dec/Jan
-    migration = 2e-2 # rate of moveing per year
-    sigma = 1 # standard devitation of population size lognormal
+    popsize_sigma = 1 # standard deviation of population size lognormal
+    world_population = 7.6e9
+    migration = 3e-3 # rate of moving per year anywhere
+    migration_sigma = 2 # standard deviation migration rate lognormal
 
     #total number of populations
     n_pops = 1000
 
     # add Hubei population with parameters specified above
-    #          population size, beta, rec, eps, theta, NH, containment
-    params = [[N0, R0*rec, rec, eps0, theta0, 1, 0.5]]
+    #          population size, beta, rec, eps, theta, NH, containment, relative migration
+    params = [[N0, R0*rec, rec, eps0, theta0, 1, 0.5, 1.0]]
     # initially fully susceptible with one case
     populations = [[1, 1/N0]]
 
@@ -55,12 +57,13 @@ if __name__ == '__main__':
             eps = np.random.random()*0.6
             theta = np.random.normal(0.5,0.15) # peak in June/July
 
-        beta = np.random.normal(loc=2.5, scale=1)*rec
-        N = np.random.lognormal(np.log(7e10/n_pops)-sigma**2/2,sigma)
+        beta = np.random.normal(loc=2.0, scale=1)*rec
+        relative_migration = np.random.lognormal(-migration_sigma**2/2, migration_sigma)
+        N = np.random.lognormal(np.log(world_population/n_pops)-popsize_sigma**2/2,popsize_sigma)
         containment = np.random.random()*0.5
         # add initially uninfected population and parameters
         populations.append([1, 0])
-        params.append([N, beta, rec, eps, theta, climate, containment])
+        params.append([N, beta, rec, eps, theta, climate, containment, relative_migration])
 
     params = np.array(params)
     populations = [np.array(populations)]
@@ -74,7 +77,7 @@ if __name__ == '__main__':
         populations.append(populations[-1] + dt*np.array([dS,dI]).T)
 
         I_tot = (params[:,0]*populations[-1][:,1]).sum()
-        populations[-1][:,1] += poisson.rvs(migration*I_tot/n_pops*dt*np.ones(n_pops))/params[:,0]
+        populations[-1][:,1] += poisson.rvs(migration*I_tot/n_pops*dt*params[:,7])/params[:,0]
         t.append(t[-1]+dt)
 
     populations = np.array(populations)
@@ -114,56 +117,36 @@ if __name__ == '__main__':
             return label
 
     fs=16
-    plt.figure(1, figsize=(14,5))
-    ax1 = plt.subplot(131) #north
-    ax2 = plt.subplot(132) #tropical
-    ax3 = plt.subplot(133) #south
-    ax1.plot(t, total_inf, lw=3, label='Total')
-    ax2.plot(t, total_inf, lw=3, label='Total')
-    ax3.plot(t, total_inf, lw=3, label='Total')
+    fig, axs = plt.subplots(1, 3, figsize=(14,5), sharey=True)
+    for ax in axs:
+        ax.plot(t, total_inf, lw=3, label='Total')
 
     for pi in range(100):
         if pi==0: #plot hubei with north
-            ax1.plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
+            axs[0].plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
                  c=get_color(pi), label=get_label(pi))
         elif params[pi][5]==0: #tropical
-            ax2.plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
+            axs[1].plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
                  c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/5)
         elif params[pi][5]==1: #north
-            ax1.plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
+            axs[0].plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
                  c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/5)
         elif params[pi][5]==-1: # south
-            ax3.plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
+            axs[2].plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
                  c=get_color(pi), label=get_label(pi), alpha=params[pi,1]/rec/5)
 
         #print("beta is {} r0 is {}".format(params[pi,1], params[pi,1]/rec)) #debug
-
-    ax1.legend(fontsize=fs*0.8, loc=8, ncol=1)
-    ax1.set_yscale('log')
-    ax1.set_ylabel('Cases', fontsize=fs)
-    ax1.set_xticks(np.array([2020, 2020.5, 2021, 2021.5, 2022]),
-            ['2020-01', '2020-04', '2020-07', '2020-10', '2021-01', '2021-04'])
-    ax1.tick_params(axis='x', labelsize=0.8*fs, labelrotation=30)
-    ax1.set_xticklabels(ax1.get_xticks(), horizontalalignment='right')
-    ax1.set_ylim([0.1,total_inf[:].max()*2])
-
-    ax2.legend(fontsize=fs*0.8, loc=8, ncol=1)
-    ax2.set_yscale('log')
-    ax2.set_ylabel('Cases', fontsize=fs)
-    ax2.set_xticks(np.array([2020, 2020.5, 2021, 2021.5, 2022]),
-            ['2020-01', '2020-04', '2020-07', '2020-10', '2021-01', '2021-04'])
-    ax2.tick_params(axis='x', labelsize=0.8*fs, labelrotation=30)
-    ax2.set_xticklabels(ax2.get_xticks(), horizontalalignment='right')
-    ax2.set_ylim([0.1,total_inf[:].max()*2])
-
-    ax3.legend(fontsize=fs*0.8, loc=8, ncol=1)
-    ax3.set_yscale('log')
-    ax3.set_ylabel('Cases', fontsize=fs)
-    ax3.set_xticks(np.array([2020, 2020.5, 2021, 2021.5, 2022]),
-            ['2020-01', '2020-04', '2020-07', '2020-10', '2021-01', '2021-04'])
-    ax3.tick_params(axis='x', labelsize=0.8*fs, labelrotation=30)
-    ax3.set_xticklabels(ax3.get_xticks(), horizontalalignment='right')
-    ax3.set_ylim([0.1,total_inf[:].max()*2])
+    for ax in axs:
+        ax.legend(fontsize=fs*0.8, loc=8, ncol=1)
+        ax.set_yscale('log')
+        if ax==axs[0]:
+            ax.set_ylabel('Cases', fontsize=fs)
+        ax.set_xticks(np.array([2020, 2020.5, 2021, 2021.5, 2022]),
+                ['2020-01', '2020-04', '2020-07', '2020-10', '2021-01', '2021-04'])
+        ax.tick_params(axis='x', labelsize=0.8*fs, labelrotation=30)
+        ax.tick_params(axis='y', labelsize=0.8*fs)
+        ax.set_xticklabels(ax.get_xticks(), horizontalalignment='right')
+        ax.set_ylim([1,total_inf[:].max()*2])
 
     plt.tight_layout()
     plt.savefig('figures/global_3_panel.pdf')
