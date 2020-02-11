@@ -24,44 +24,51 @@ if __name__ == '__main__':
 
     rec = 25
     R0 = 2
-    N0 = 1e6
+    N0 = 1e7
     dt = 0.003
     tmax = 2
     eps0 = 0.5
     phi0 = 0.0
     migration = 2e-2
-    t = 0
+    sigma = 1 # standard devitation of population size lognormal
 
-    n_pops = 100
-    # add Hubei
+    #total number of populations
+    n_pops = 1000
+
+    # add Hubei population with parameters specified above
+    #          population size, beta, rec, eps, phi, NH, containment
     params = [[N0, R0*rec, rec, eps0, phi0, 1, 0.5]]
+    # initially fully susceptible with one case
     populations = [[1, 1/N0]]
 
+    # construct other populations
     for i in range(n_pops-1):
-        tmp = np.random.random()
+        tmp = np.random.random() # draw NH, SH, tropical
         if tmp<0.5:
             climate = 0 #tropical
             eps = np.random.random()*0.2
             phi = np.random.random()
         elif tmp<0.85:
             climate = 1 # northern
-            eps = np.random.random()*0.8
-            phi = np.random.normal(0,0.15)
+            eps = np.random.random()*0.6
+            phi = np.random.normal(0,0.15)  # peak in Dec/Jan
         else:
             climate = -1
-            eps = np.random.random()*0.8
-            phi = np.random.normal(0.5,0.15)
+            eps = np.random.random()*0.6
+            phi = np.random.normal(0.5,0.15) # peak in June/July
 
         beta = np.random.normal(loc=2.5, scale=1)*rec
-        N = np.random.lognormal(12,1)
+        N = np.random.lognormal(np.log(7e10/n_pops)-sigma**2/2,sigma)
         containment = np.random.random()*0.5
+        # add initially uninfected population and parameters
         populations.append([1, 0])
         params.append([N, beta, rec, eps, phi, climate, containment])
 
     params = np.array(params)
     populations = [np.array(populations)]
-    t = [2019.8]
 
+    # start simulation
+    t = [2019.8]
     tmax = 2021
     while t[-1]<tmax:
         dS, dI = dSIRdt_vec(populations[-1][:,0], populations[-1][:,1], t[-1], params)
@@ -72,12 +79,13 @@ if __name__ == '__main__':
         t.append(t[-1]+dt)
 
     populations = np.array(populations)
+    # weigh each infection trajectory by its population size
     total_inf = (params[:,0]*populations[:,:,1]).sum(axis=1)
 
-    fs=16
-    plt.figure()
-    plt.plot(t, total_inf, lw=3, label='Total')
 
+    #####################################################################
+    ### plot figures
+    #####################################################################
     def get_color(pi):
         if pi==0:
             return 'C1'
@@ -106,8 +114,12 @@ if __name__ == '__main__':
             label_set.add(label)
             return label
 
-    for pi in range(n_pops):
-        plt.plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1,
+    fs=16
+    plt.figure()
+    plt.plot(t, total_inf, lw=3, label='Total')
+
+    for pi in range(30):
+        plt.plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 2,
                  c=get_color(pi), label=get_label(pi))
 
     plt.legend(fontsize=fs*0.8)
