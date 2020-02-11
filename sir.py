@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def dSIRdt(tSI, beta, epsg, eps, phi, rec, turn_over, migration):
+def dSIRdt(tSI, beta, epsg, eps, theta, rec, turn_over, migration):
     Ng = 1e8
     N = 1e6
     # global infection, peak transmissibility at t=0
@@ -9,8 +9,8 @@ def dSIRdt(tSI, beta, epsg, eps, phi, rec, turn_over, migration):
     dSg = - infectiong/Ng + (1-tSI[1])*turn_over
     dIg = infectiong - (turn_over+rec)*tSI[2] + migration*(tSI[4]-tSI[2])
 
-    # global infection, peak transmissibility at t=phi
-    infection = beta*(1+eps*np.cos(2*np.pi*(tSI[0]-phi)))*tSI[3]*tSI[4]
+    # global infection, peak transmissibility at t=theta
+    infection = beta*(1+eps*np.cos(2*np.pi*(tSI[0]-theta)))*tSI[3]*tSI[4]
     dS = - infection/N + (1-tSI[3])*turn_over
     dI = infection - (turn_over+rec)*tSI[4]  + migration*(tSI[2]-tSI[4])
 
@@ -32,13 +32,13 @@ if __name__ == '__main__':
 
 
     # loop over different scenarios for peak transmissibility
-    for phi in [11/12, 1/12, 3/12]:
+    for theta in [11/12, 1/12, 3/12]:
         plt.figure()
-        plt.title(f"peak transmissibility: {phi*12}")
+        plt.title(f"peak transmissibility: {theta*12}")
         for bi, beta in enumerate(R0_vals):
             SI_vs_t = [np.array([t0, 1, 1, 1, 0.00])]
             while SI_vs_t[-1][0]<t0+2:
-                dSIR = dSIRdt(SI_vs_t[-1], beta*rec, epsg, eps, phi, rec, turn_over, migration)
+                dSIR = dSIRdt(SI_vs_t[-1], beta*rec, epsg, eps, theta, rec, turn_over, migration)
                 SI_vs_t.append(SI_vs_t[-1] + dSIR*dt)
 
 
@@ -56,15 +56,15 @@ if __name__ == '__main__':
         plt.ylabel('prevalence', fontsize=fs)
         plt.legend(loc=4, fontsize=fs*0.8)
 
-        plt.savefig(f'figures/prevalance_{int(phi*12)}_eps{eps}_epsg{epsg}.pdf')
+        plt.savefig(f'figures/prevalance_{int(theta*12)}_eps{eps}_epsg{epsg}.pdf')
 
 
     plt.figure()
-    phi=0
+    theta=0
     for bi, beta in enumerate(R0_vals):
         SI_vs_t = [np.array([0, 1/beta, 1, 1/beta, 0.00])]
         while SI_vs_t[-1][0]<30:
-            dSIR = dSIRdt(SI_vs_t[-1], beta*rec, epsg, eps, phi, rec, turn_over, migration)
+            dSIR = dSIRdt(SI_vs_t[-1], beta*rec, epsg, eps, theta, rec, turn_over, migration)
             SI_vs_t.append(SI_vs_t[-1] + dSIR*dt)
 
 

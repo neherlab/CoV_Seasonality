@@ -8,8 +8,8 @@ def dSIRdt_vec(S, I, t, params):
 
     S, I are vectors with one entry for each population
     t is time
-    params is an array of [[N, beta, rec, eps, phi, climate, containment],
-                           [N, beta, rec, eps, phi, climate, containment], ...]
+    params is an array of [[N, beta, rec, eps, theta, climate, containment],
+                           [N, beta, rec, eps, theta, climate, containment], ...]
 
     '''
     infection = params[:,1]*(1 - params[:,6]*I**3/(0.03**3+I**3))*S*I*(1+params[:,3]*np.cos(2*np.pi*(t - params[:,4])))
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     R0 = 2     # together with eps=0.5, this corresponds to 2.5 in winter
     N0 = 1e7   # size of Wuhan
     eps0 = 0.5 # seasonality
-    phi0 = 0.0 # peak transmissibility in Dec/Jan
+    theta0 = 0.0 # peak transmissibility in Dec/Jan
     migration = 2e-2 # rate of moveing per year
     sigma = 1 # standard devitation of population size lognormal
 
@@ -34,8 +34,8 @@ if __name__ == '__main__':
     n_pops = 1000
 
     # add Hubei population with parameters specified above
-    #          population size, beta, rec, eps, phi, NH, containment
-    params = [[N0, R0*rec, rec, eps0, phi0, 1, 0.5]]
+    #          population size, beta, rec, eps, theta, NH, containment
+    params = [[N0, R0*rec, rec, eps0, theta0, 1, 0.5]]
     # initially fully susceptible with one case
     populations = [[1, 1/N0]]
 
@@ -45,22 +45,22 @@ if __name__ == '__main__':
         if tmp<0.5:
             climate = 0 #tropical
             eps = np.random.random()*0.2
-            phi = np.random.random()
+            theta = np.random.random()
         elif tmp<0.85:
             climate = 1 # northern
             eps = np.random.random()*0.6
-            phi = np.random.normal(0,0.15)  # peak in Dec/Jan
+            theta = np.random.normal(0,0.15)  # peak in Dec/Jan
         else:
             climate = -1
             eps = np.random.random()*0.6
-            phi = np.random.normal(0.5,0.15) # peak in June/July
+            theta = np.random.normal(0.5,0.15) # peak in June/July
 
         beta = np.random.normal(loc=2.5, scale=1)*rec
         N = np.random.lognormal(np.log(7e10/n_pops)-sigma**2/2,sigma)
         containment = np.random.random()*0.5
         # add initially uninfected population and parameters
         populations.append([1, 0])
-        params.append([N, beta, rec, eps, phi, climate, containment])
+        params.append([N, beta, rec, eps, theta, climate, containment])
 
     params = np.array(params)
     populations = [np.array(populations)]
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     # start simulation
     t = [2019.8]
     dt = 0.001
-    tmax = 2021
+    tmax = 2022
     while t[-1]<tmax:
         dS, dI = dSIRdt_vec(populations[-1][:,0], populations[-1][:,1], t[-1], params)
         populations.append(populations[-1] + dt*np.array([dS,dI]).T)
@@ -124,12 +124,11 @@ if __name__ == '__main__':
     plt.legend(fontsize=fs*0.8, loc=8, ncol=2)
     plt.yscale('log')
     plt.ylabel('Cases', fontsize=fs)
-    plt.xticks(np.array([2020, 2020.25, 2020.5, 2020.75, 2021, 2021.25]),
+    plt.xticks(np.array([2020, 2020.5, 2021, 2021.5, 2022]),
                ['2020-01', '2020-04', '2020-07', '2020-10', '2021-01', '2021-04'])
-    plt.xlabel('Time', fontsize=fs)
     plt.tick_params(labelsize=0.8*fs)
     plt.xticks(rotation=30, horizontalalignment='right')
     plt.ylim([0.1,total_inf[:].max()*2])
     plt.tight_layout()
-    plt.savefig('seeding.png')
+    plt.savefig('figures/global.pdf')
 
