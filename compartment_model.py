@@ -22,14 +22,12 @@ def dSIRdt_vec(S, I, t, params):
 
 if __name__ == '__main__':
 
-    rec = 25
-    R0 = 2
-    N0 = 1e7
-    dt = 0.003
-    tmax = 2
-    eps0 = 0.5
-    phi0 = 0.0
-    migration = 2e-2
+    rec = 36   # 10 day serial interval
+    R0 = 2     # together with eps=0.5, this corresponds to 2.5 in winter
+    N0 = 1e7   # size of Wuhan
+    eps0 = 0.5 # seasonality
+    phi0 = 0.0 # peak transmissibility in Dec/Jan
+    migration = 2e-2 # rate of moveing per year
     sigma = 1 # standard devitation of population size lognormal
 
     #total number of populations
@@ -69,6 +67,7 @@ if __name__ == '__main__':
 
     # start simulation
     t = [2019.8]
+    dt = 0.001
     tmax = 2021
     while t[-1]<tmax:
         dS, dI = dSIRdt_vec(populations[-1][:,0], populations[-1][:,1], t[-1], params)
@@ -118,17 +117,18 @@ if __name__ == '__main__':
     plt.figure()
     plt.plot(t, total_inf, lw=3, label='Total')
 
-    for pi in range(30):
-        plt.plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 2,
+    for pi in range(50):
+        plt.plot(t, populations[:,pi,1]*params[pi, 0], lw=3 if pi==0 else 1.5,
                  c=get_color(pi), label=get_label(pi))
 
-    plt.legend(fontsize=fs*0.8)
+    plt.legend(fontsize=fs*0.8, loc=8, ncol=2)
     plt.yscale('log')
     plt.ylabel('Cases', fontsize=fs)
     plt.xticks(np.array([2020, 2020.25, 2020.5, 2020.75, 2021, 2021.25]),
                ['2020-01', '2020-04', '2020-07', '2020-10', '2021-01', '2021-04'])
     plt.xlabel('Time', fontsize=fs)
     plt.tick_params(labelsize=0.8*fs)
+    plt.xticks(rotation=30, horizontalalignment='right')
     plt.ylim([0.1,total_inf[:].max()*2])
     plt.tight_layout()
     plt.savefig('seeding.png')
