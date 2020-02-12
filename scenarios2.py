@@ -9,9 +9,9 @@ from matplotlib.colors import to_hex
 
 rec = 36   # 10 day serial interval
 nb_pts = 4
-R0s = np.linspace(1.5,3,nb_pts)
+R0s = np.linspace(1.3,2.5,nb_pts)
 migrations = np.logspace(-3, -1, nb_pts)
-N0,N1 = 1e7,1e8
+N0,N1 = 6e7,1e8
 
 fig, axes = plt.subplots(nb_pts,nb_pts, sharex=True, sharey=True, figsize=(14,10))
 
@@ -20,7 +20,7 @@ for ii,migration in enumerate(migrations):
 
         # add Hubei population with parameters specified above
         #          population size, beta, rec, eps, theta, NH, containment, migration
-        params = [[N0, R0*rec, rec, 0.5, 0.0, 1,     0.5, migration],
+        params = [[N0, R0*rec, rec, 0.4, 0.0, 1,     0.5, migration],
                   [N1, R0*rec, rec, 0.5, 10.5/12, 1, 0.5, migration],
                   [N1, R0*rec, rec, 0.5, 0.5/12, 1,  0.5, migration],
                   [N1, R0*rec, rec, 0.5, 2.5/12, 1,  0.5, migration]]
@@ -52,7 +52,7 @@ for ii,migration in enumerate(migrations):
         colors = ['C0', to_hex(plasma(0.1)), to_hex(plasma(0.5)), to_hex(plasma(0.9))]
 
         fs=16
-        
+
         axes[ii,jj].plot(t, populations[:,0,1]*params[0, 0], lw=3, label='Hubei', ls='--', c=colors[0])
 
         for pi in range(1,len(params)):
@@ -67,7 +67,7 @@ for ii,migration in enumerate(migrations):
             axes[ii,jj].set_xticks(np.array([2020, 2020.25, 2020.5, 2020.75, 2021, 2021.25, 2021.5]))
             axes[ii,jj].set_xticklabels(['2020-01', '2020-04', '2020-07', '2020-10', '2021-01', '2021-04', '2021-07'])
             plt.setp(axes[ii,jj].xaxis.get_majorticklabels(), rotation=30)
-            axes[ii,jj].set_xlabel("R_0=%.1f"%R0, fontsize=fs)
+            axes[ii,jj].set_xlabel(r"$\langle R_0\rangle=$"+"%.1f"%R0, fontsize=fs)
         axes[ii,jj].tick_params(labelsize=0.8*fs)
         axes[ii,jj].set_yscale('log')
 

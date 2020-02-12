@@ -22,21 +22,23 @@ def dSIRdt_vec(S, I, t, params, turnover=0):
 
 
 def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5, eps_tropical=0.2,
-                                  R0_sigma=0.5, population_turnover=0.1):
-    #R0 = 2     # together with eps0=0.5, this corresponds to 2.5 in winter
-    rec = 36   # 10 day serial interval
-    N0 = 1e7   # size of Wuhan
-    eps0 = 0.5 # seasonality
+                                  R0_sigma=0.5, population_turnover=0.1, containment_hubei=0.5,
+                                  containment_world_range=0.5, plot_three_panel=True):
+    # R0 = 2     # together with eps0=0.5, this corresponds to 2.5 in winter
+    # containment_hubei = 0.5 # containment value for hubei. Strong containment measures in Hubei
+    # containment_world_range = 0.5 # assumes uniform distribution between no containment and 0.5 in other regions
+
+    rec = 26   # recovery rate 1/2 weeks, results in an average 2weeks/R0 average seasonal interval.
+    N0 = 6e7   # size of Hubei
+    eps0 = 0.4 # seasonality in Hubei
     theta0 = 0.0 # peak transmissibility in Dec/Jan
     popsize_sigma = 1 # standard deviation of population size lognormal
     world_population = 7.6e9
     migration = 1e-2 # rate of moving per year anywhere
     migration_sigma = 1 # standard deviation migration rate lognormal
-    containment_hubei = 0.5 # containment value for hubei. Strong containment measures in Hubei
-    containment_world_range = 0.5 # assumes uniform distribution between no containment and 0.5 in other regions
     theta_temperate_sigma = 0.1  # standard deviation of the distribution of peak x-missibility in temperate regions
     regions = {"Northern temperate":1, "Tropical":0,  "Southern temperate":-1}
-    under_reporting = 10
+    under_reporting = 3
 
     #total number of populations
     n_pops = 1000
@@ -56,7 +58,7 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
             theta = np.random.random()
         elif tmp<0.9: # 90% live in the northern hemisphere
             climate = regions["Northern temperate"]
-            eps = np.random.random()*eps_temperate
+            eps = 0.25+np.random.random()*eps_temperate
             theta = np.random.normal(0,theta_temperate_sigma)  # peak in Dec/Jan
         else:
             climate = regions["Southern temperate"]
@@ -115,7 +117,7 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
             return label
 
     fs=16
-    if tmax<2023:
+    if plot_three_panel:
         # keep track of the lines we plot, so we can make one legend for whole figure
         subLines = {}
 
@@ -142,14 +144,14 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
             for pi in range(min(30, len(params_by_region[r]))):
                 if not(r=='Northern temperate' and pi == 0): #don't plot Hubei twice...
                     ax.plot(t, pops_by_region[r][:,pi,1]*params_by_region[r][pi, 0], lw=1.5, c=colors[r],
-                        alpha=params[pi,1]/rec/maxR0)
+                        alpha=params_by_region[r][pi,1]/rec/maxR0)
                     label_set.add(r)
 
             # make custom legend to show R0 values
             custom_lines = [Line2D([0], [0], color=colors[r], lw=2, alpha=(1/maxR0)),
                             Line2D([0], [0], color=colors[r], lw=2, alpha=(R0/maxR0)),
                             Line2D([0], [0], color=colors[r], lw=2, alpha=1)]
-            first_legend = ax.legend(custom_lines, ["1",R0,round(maxR0,1)], title="R0", fontsize=fs*0.8, loc=1)#4)
+            first_legend = ax.legend(custom_lines, ["1",R0,round(maxR0,1)], title="R0", fontsize=fs*0.8, loc=4)#4)
             plt.setp(first_legend.get_title(),fontsize=fs)
             ax.add_artist(first_legend)
 
@@ -172,7 +174,7 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
             ax.plot(case_counts["date"], case_counts["total"]*under_reporting,
                     lw=3, label=f'Observed (x{under_reporting})', c=colors[f"Total observed"])
 
-        fig.legend(subLines.values(), subLines.keys(), loc='lower center', ncol=3, fontsize=fs*0.8)        
+        fig.legend(subLines.values(), subLines.keys(), loc='lower center', ncol=3, fontsize=fs*0.8)
         plt.tight_layout()
         plt.subplots_adjust(bottom=0.27)
         plt.savefig(f'figures/global_3_panel_{R0}.pdf')
@@ -196,9 +198,10 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
 
 if __name__ == '__main__':
 
+    for t0, R0 in zip([2019.6, 2019.8, 2020], [1.4, 1.8, 2.7]):
+        plot_many_population_scenario(R0=R0, t0=t0, eps_temperate=0.5, R0_sigma=0.5, tmax=2022,
+                                      population_turnover=0.0, containment_hubei=0.5)
 
-    for t0, R0 in zip([2019.6, 2019.9, 2020], [1.5, 2.0, 3.0]):
-        plot_many_population_scenario(R0=R0, eps_temperate=0.6, R0_sigma=0.5, tmax=2022, population_turnover=0.0)
-
-    for t0, R0 in zip([2019.6, 2019.9, 2020], [1.5, 2.0, 3.0]):
-        plot_many_population_scenario(R0=R0, eps_temperate=0.6, R0_sigma=0.5, tmax=2032, population_turnover=0.1)
+    # for t0, R0 in zip([2019.6, 2019.8, 2020], [1.4, 1.8, 2.7]):
+    #     plot_many_population_scenario(R0=R0, t0=t0, eps_temperate=0.5, R0_sigma=0.5,
+    #                                   tmax=2032, population_turnover=0.1, plot_three_panel=False)

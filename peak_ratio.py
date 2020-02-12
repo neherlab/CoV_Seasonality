@@ -23,15 +23,14 @@ if __name__ == '__main__':
 
     rec = 36   # 10 day serial interval
     migration = 1e-2 # rate of moveing per year
-    N0,N1 = 1e7,1e8
-    eps_hubei = 0.5
-    R0_hubei = 2.0
-    eps = 0.5
+    N0,N1 = 6e7,1e8
+    eps_hubei = 0.4
+    R0_hubei = 1.8
     containment_hubei = 0.5
     containment_NH = 0.5
     theta_hubei = 0.0
 
-    R0_vals = np.linspace(1.5,3,14)
+    R0_vals = np.linspace(1.5,3,8)
     theta_vals = np.array([10, 10.5, 11, 11.5, 0, 0.5, 1, 1.5, 2, 2.5])/12
     for eps in [0.3, 0.5, 0.7]:
         ratio = []
@@ -46,7 +45,7 @@ if __name__ == '__main__':
                 n_pops = len(params)
 
 
-                t = [2019.9]
+                t = [2019.8]
                 dt = 0.001
                 tmax = 2021.5
                 while t[-1]<tmax:
@@ -59,7 +58,7 @@ if __name__ == '__main__':
                     t.append(t[-1]+dt)
 
                 NH = np.array(populations)[:,1,1][::10]
-                peaks = np.where((NH[1:-1]>NH[2:])&(NH[1:-1]>NH[:-2])&(NH[1:-1]>100/N1))[0]
+                peaks = np.where((NH[1:-1]>NH[2:])&(NH[1:-1]>NH[:-2])&(NH[1:-1]>1000/N1))[0]
                 if len(peaks)==2:
                     ratio.append(NH[peaks[0]]/NH[peaks[1]])
                 elif len(peaks)==1:
@@ -69,7 +68,7 @@ if __name__ == '__main__':
                     else:
                         ratio.append(0.001)
                 else:
-                    # import ipdb; ipdb.set_trace()
+                    import ipdb; ipdb.set_trace()
                     print("ambiguous peaks")
                     ratio.append(np.nan)
 
@@ -87,7 +86,7 @@ if __name__ == '__main__':
         cbar.ax.tick_params('y', labelsize=0.8*fs)
         plt.yticks(np.arange(0,len(R0_vals),2),[f"{x:1.1f}" for x in R0_vals[::2]], rotation=0)
         plt.xticks(np.arange(0,len(theta_vals),2),[f"{month_lookup[int(x*12-0.5)]}" for x in theta_vals[1::2]])
-        plt.ylabel(r"$R_0$", fontsize=fs)
+        plt.ylabel(r"$\langle R_0\rangle $", fontsize=fs)
         plt.xlabel(r"peak transmission $\theta$", fontsize=fs)
         plt.ylim(-0.5,-0.5+len(R0_vals))
         plt.xlim(-0.5,-0.5+len(theta_vals))
