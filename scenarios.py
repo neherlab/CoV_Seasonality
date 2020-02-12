@@ -7,15 +7,15 @@ from peak_ratio import month_lookup
 if __name__ == '__main__':
 
     rec = 36   # 10 day serial interval
-    migration = 1e-3 # rate of moving per year
+    migration = 1e-2 # rate of moving per year
     N0,N1 = 1e7,1e8
 
     # add Hubei population with parameters specified above
-    #          population size, beta, rec, eps, theta, NH, containment
-    params = [[N0, 2*rec, rec, 0.5, 0.0, 1,     0.5],
-              [N1, 2*rec, rec, 0.5, 10.5/12, 1, 0.5],
-              [N1, 2*rec, rec, 0.5, 0.5/12, 1,  0.5],
-              [N1, 2*rec, rec, 0.5, 2.5/12, 1,  0.5]]
+    #          population size, beta, rec, eps, theta, NH, containment, migration
+    params = [[N0, 2*rec, rec, 0.5, 0.0, 1,     0.5, migration],
+              [N1, 2*rec, rec, 0.5, 10.5/12, 1, 0.5, migration],
+              [N1, 2*rec, rec, 0.5, 0.5/12, 1,  0.5, migration],
+              [N1, 2*rec, rec, 0.5, 2.5/12, 1,  0.5, migration]]
     # initially fully susceptible with one case in Hubei, no cases in NH
     populations = [[1, 1/N0], [1,0], [1,0], [1,0]]
     #total number of populations
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     populations = [np.array(populations)]
 
     # start simulation
-    t = [2019.8]
+    t = [2019.9]
     dt = 0.001
     tmax = 2021.5
     while t[-1]<tmax:
@@ -34,19 +34,23 @@ if __name__ == '__main__':
         populations.append(populations[-1] + dt*np.array([dS,dI]).T)
 
         I_tot = (params[:,0]*populations[-1][:,1]).sum()
-        populations[-1][:,1] += poisson.rvs(migration*I_tot/n_pops*dt*np.ones(n_pops))/params[:,0]
+        populations[-1][:,1] += poisson.rvs(I_tot/n_pops*dt*params[:,7])/params[:,0]
         populations[-1][populations[-1][:,1]<1/params[:,0],1] = 0
         t.append(t[-1]+dt)
 
     populations = np.array(populations)
 
+    from matplotlib.cm import plasma
+    from matplotlib.colors import to_hex
+    colors = ['C0', to_hex(plasma(0.1)), to_hex(plasma(0.5)), to_hex(plasma(0.9))]
+
     fs=16
     plt.figure()
-    plt.plot(t, populations[:,0,1]*params[0, 0], lw=3, label='Hubei', ls='--')
+    plt.plot(t, populations[:,0,1]*params[0, 0], lw=3, label='Hubei', ls='--', c=colors[0])
 
     for pi in range(1,len(params)):
-        plt.plot(t, populations[:,pi,1]*params[pi, 0],
-                lw=3, label=f'NH peak {month_lookup[int(params[pi,4]*12-0.5)]}')
+        plt.plot(t, populations[:,pi,1]*params[pi, 0], c=colors[pi],
+                lw=3, label=r"NE $\theta=$" + f'{month_lookup[int(params[pi,4]*12-0.5)]}')
 
     plt.legend(fontsize=fs*0.8, loc=8, ncol=2)
     plt.yscale('log')
