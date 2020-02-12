@@ -19,9 +19,9 @@ betas = np.linspace(beta_min, beta_max, nb_pts)
 nus = np.linspace(nu_min, nu_max, nb_pts)
 B, N = np.meshgrid(betas, nus)
 levels = np.linspace(0,10,40+1)
-fontsize = 18
+fontsize = 16
 
-fig = plt.figure(figsize=(14,10))
+fig = plt.figure()
 CS = plt.contourf(B, N, get_period(B,N,b), levels=levels)
 CS2 = plt.contour(CS, levels=[1,2,3,4], colors='r', origin="lower")
 plt.clabel(CS2, fmt='%2.1f', colors='k', fontsize=0.7*fontsize)
