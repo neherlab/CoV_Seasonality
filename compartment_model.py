@@ -158,11 +158,10 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
             ax.set_yscale('log')
             if ax==axs[0]:
                 ax.set_ylabel('Cases', fontsize=fs)
-            ax.set_xticks(np.array([2020.05, 2020.05, 2021.05, 2021.05, 2022.05]),
-                                   ['2020-01', '2020-07', '2021-01', '2021-07', '2022-01'])
+            ax.set_xticks(np.array([2020.05, 2020.5, 2021.05, 2021.5, 2022.05]))
+            ax.set_xticklabels(['2020-01', '2020-07', '2021-01', '2021-07', '2022-01'], horizontalalignment='right')
             ax.tick_params(axis='x', labelsize=0.8*fs, labelrotation=30)
             ax.tick_params(axis='y', labelsize=0.8*fs)
-            ax.set_xticklabels(ax.get_xticks(), horizontalalignment='right')
             ax.set_ylim([1,total_inf[:].max()*2])
 
         #plot 'observed' again now, so it's on top, and more visible (as such short line)
@@ -175,7 +174,7 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
 
         fig.legend(subLines.values(), subLines.keys(), loc='lower center', ncol=3, fontsize=fs*0.8)        
         plt.tight_layout()
-        plt.subplots_adjust(bottom=0.25)
+        plt.subplots_adjust(bottom=0.27)
         plt.savefig(f'figures/global_3_panel_{R0}.pdf')
     else:
         fig, ax = plt.subplots(1, 1, figsize=(8,6))
