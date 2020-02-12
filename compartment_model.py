@@ -116,37 +116,45 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
 
     fs=16
     if tmax<2023:
+        # keep track of the lines we plot, so we can make one legend for whole figure
+        subLines = {}
+
         fig, axs = plt.subplots(1, 3, figsize=(14,5), sharey=True)
         for ax in axs:
-            ax.plot(t, total_inf, lw=3, label='Total', c=colors["Total simulation"])
-            ax.plot(case_counts["date"], case_counts["total"]*under_reporting,
-                    lw=3, label=f'observed (x{under_reporting})', c=colors[f"Total observed"])
+            totalLine = ax.plot(t, total_inf, lw=3, label='Total', c=colors["Total simulation"])
+            observedLine = ax.plot(case_counts["date"], case_counts["total"]*under_reporting,
+                    lw=3, label=f'Observed (x{under_reporting})', c=colors[f"Total observed"])
+            subLines['Total'] = totalLine[0]
+            subLines[f'Observed (x{under_reporting})'] = observedLine[0]
 
         #find max R0 to adjust colour shading when plotting lines
         maxR0 = max(params[:,1]/rec)
 
         for ax,r in zip(axs, regions.keys()):
             ax.set_title(r, fontsize=fs*1.2)
-            ax.plot(t, (params_by_region[r][:,0]*pops_by_region[r][:,:,1]).sum(axis=1), lw=3, label="Sub-total", c=colors[r])
+            subLine = ax.plot(t, (params_by_region[r][:,0]*pops_by_region[r][:,:,1]).sum(axis=1), lw=3, label="Sub-total", c=colors[r])
+            subLines["Sub-total {}".format(r)] = subLine[0]
             label_set = set()
             if r=='Northern temperate':
-                ax.plot(t, populations[:,0,1]*params[0, 0], lw=3, c=colors["Hubei"], label="Hubei")
+                hubeiLine = ax.plot(t, populations[:,0,1]*params[0, 0], lw=3, c=colors["Hubei"], label="Hubei")
+                subLines['Hubei'] = hubeiLine[0]
 
-            for pi in range(min(20, len(params_by_region[r]))):
-                ax.plot(t, pops_by_region[r][:,pi,1]*params_by_region[r][pi, 0], lw=1.5, c=colors[r],
+            for pi in range(min(30, len(params_by_region[r]))):
+                if not(r=='Northern temperate' and pi == 0): #don't plot Hubei twice...
+                    ax.plot(t, pops_by_region[r][:,pi,1]*params_by_region[r][pi, 0], lw=1.5, c=colors[r],
                         alpha=params[pi,1]/rec/maxR0)
-                label_set.add(r)
-
+                    label_set.add(r)
 
             # make custom legend to show R0 values
             custom_lines = [Line2D([0], [0], color=colors[r], lw=2, alpha=(1/maxR0)),
                             Line2D([0], [0], color=colors[r], lw=2, alpha=(R0/maxR0)),
                             Line2D([0], [0], color=colors[r], lw=2, alpha=1)]
-            first_legend = ax.legend(custom_lines, ["1",R0,round(maxR0,1)], title="R0", fontsize=fs*0.8, loc=4)
+            first_legend = ax.legend(custom_lines, ["1",R0,round(maxR0,1)], title="R0", fontsize=fs*0.8, loc=1)#4)
             plt.setp(first_legend.get_title(),fontsize=fs)
             ax.add_artist(first_legend)
 
-            ax.legend(fontsize=fs*0.8, loc=8, ncol=1)
+            # dont plot indiv leg anymore, use one leg at bottom
+            #ax.legend(fontsize=fs*0.8, loc=8, ncol=1)
             ax.set_yscale('log')
             if ax==axs[0]:
                 ax.set_ylabel('Cases', fontsize=fs)
@@ -157,7 +165,17 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
             ax.set_xticklabels(ax.get_xticks(), horizontalalignment='right')
             ax.set_ylim([1,total_inf[:].max()*2])
 
+        #plot 'observed' again now, so it's on top, and more visible (as such short line)
+        for ax in axs:
+            #make a lighter 'shadow' around the line so it's more visible
+            ax.plot(case_counts["date"], case_counts["total"]*under_reporting,
+                    lw=4, label=f'Observed (x{under_reporting})', c='white')
+            ax.plot(case_counts["date"], case_counts["total"]*under_reporting,
+                    lw=3, label=f'Observed (x{under_reporting})', c=colors[f"Total observed"])
+
+        fig.legend(subLines.values(), subLines.keys(), loc='lower center', ncol=3, fontsize=fs*0.8)        
         plt.tight_layout()
+        plt.subplots_adjust(bottom=0.25)
         plt.savefig(f'figures/global_3_panel_{R0}.pdf')
     else:
         fig, ax = plt.subplots(1, 1, figsize=(8,6))
