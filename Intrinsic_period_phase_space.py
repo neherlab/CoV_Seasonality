@@ -1,12 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import math
 
 def get_period(B,N,b):
     R0 = B/(N+b)
     delta = R0**2*b**2-4*b*(N*(R0-1)-b)
     period = np.zeros(delta.shape)
-    period[delta<0] = (4.0*math.pi)/np.sqrt(-delta[delta<0])
+    period[delta<0] = (4.0*np.pi)/np.sqrt(-delta[delta<0])
     return period
 
 
