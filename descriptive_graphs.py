@@ -56,11 +56,16 @@ plt.savefig('figures/pos_count_vs_age.pdf')
 
 plt.figure()
 for t,d in data_by_test.items():
-    neg = d["pos/neg"]==0
-    pos = d["pos/neg"]==1
+    with open(f"data/{t.replace(' ','_').replace('/','_')}_by_age.tsv", 'w') as fh:
+        fh.write("age_lower\tage_upper\tpositive tests\tnegative tests\n")
+        neg = d["pos/neg"]==0
+        pos = d["pos/neg"]==1
 
-    yn,xn = np.histogram(d.loc[neg, "age"], bins=bins)
-    yp,xp = np.histogram(d.loc[pos, "age"], bins=bins)
+        yn,xn = np.histogram(d.loc[neg, "age"], bins=bins)
+        yp,xp = np.histogram(d.loc[pos, "age"], bins=bins)
+        for i in range(len(bins)-1):
+            fh.write(f"{bins[i]}\t{bins[i+1]}\t{yp[i]}\t{yn[i]}\n")
+
     plt.plot(bin_centers, yp/yn, label=t)
 
 plt.legend(fontsize=0.8*fs)
@@ -74,7 +79,13 @@ plt.savefig('figures/pos_frac_vs_age.pdf')
 # plot through time
 plt.figure()
 for t,d in data_by_test.items():
-    x = d.groupby(by=lambda x:(d.loc[x,'admission_date'].year,d.loc[x,'admission_date'].month)).sum()
+    groups = d.groupby(by=lambda x:(d.loc[x,'admission_date'].year,d.loc[x,'admission_date'].month))
+    with open(f"data/{t.replace(' ','_').replace('/','_')}_by_month.tsv", 'w') as fh:
+        fh.write("year\tmonth\tpositive tests\tnegative tests\n")
+        for g, d in groups:
+            fh.write(f"{g[0]}\t{g[1]}\t{np.sum(d['pos/neg']==1)}\t{np.sum(d['pos/neg']==0)}\n")
+
+    x = groups.sum()
     time_ax = [i[0]+(i[1]-0.5)/12 for i in x.index]
     plt.plot(time_ax, x["pos/neg"], label=t, lw=4 if t=='all CoVs' else 2)
 
