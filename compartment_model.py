@@ -24,7 +24,7 @@ def dSIRdt_vec(S, I, t, params, turnover=0):
 def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5, eps_tropical=0.2,
                                   R0_sigma=0.5, population_turnover=0.1, containment_hubei=0.5,
                                   containment_world_range=0.5, plot_three_panel=True):
-    # R0 = 2     # together with eps0=0.5, this corresponds to 2.5 in winter
+    # R0 = 2     # together with eps0=0.5, this corresponds to 3.0 in winter
     # containment_hubei = 0.5 # containment value for hubei. Strong containment measures in Hubei
     # containment_world_range = 0.5 # assumes uniform distribution between no containment and 0.5 in other regions
 
