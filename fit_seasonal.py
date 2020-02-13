@@ -49,7 +49,7 @@ def cost(traj, prevalence, plot=False, dt=0.001):
 
 if __name__ == '__main__':
     # read average seasonal test-positive rate.
-    df = pd.read_csv('frac_positive_by_month.tsv', sep='\t')
+    df = pd.read_csv('data/frac_positive_by_month.tsv', sep='\t')
     from itertools import product
     # all time units are years. A rate of 1/day is hence 365/year
     # 1/week is 52/year
