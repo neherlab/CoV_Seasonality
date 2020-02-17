@@ -6,18 +6,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def dSIRdt(tSI, beta, eps, theta, rec, influx, turnover):
+def dSIRdt(tSEI, beta, eps, theta, rec, influx, turnover):
     '''
     time derivative of a simple SIR model with an influx of infected
     (e.g. holiday returnees) and population turnover. Seasonality is
     modelled as harmonically oscillating infectivity with amplitude
     eps and peak at theta
     '''
-    infection = beta*(1+eps*np.cos(2*np.pi*(tSI[0]-theta)))*tSI[1]*tSI[2]
+    infection = beta*(1+eps*np.cos(2*np.pi*(tSEI[0]-theta)))*tSEI[1]*tSEI[3]
 
-    dS = - infection + (1-tSI[1])*turnover - influx
-    dI = infection - (turnover+rec)*tSI[2] + influx
-    return np.array([1, dS, dI])
+    dS = - infection + (1-tSEI[1])*turnover - influx
+    dE =  infection - (turnover+1/incubation)*tSEI[2] + influx
+    dI =  tSEI[2]/incubation - (turnover+rec)*tSEI[3]
+    return np.array([1, dS, dE, dI])
 
 
 def run_SIR(X, tmax, dt):
@@ -25,19 +26,20 @@ def run_SIR(X, tmax, dt):
     generate a trajectory for parameters X of length tmax with integration
     time step dt
     '''
-    beta, eps, theta, rec, influx, turnover = X
+    beta, eps, theta, rec, influx, turnover, incubation = X
 
     # initialize trajectory at steady state.
-    tSI = [np.array([0, rec/beta, turnover*(R0-1)/(R0*rec)])]
+    tSEI = [np.array([0, rec/beta, 0, turnover*(R0-1)/(R0*rec)])]
 
-    while tSI[-1][0]<tmax:
-        dSIR = dSIRdt(tSI[-1], beta, eps, theta, rec, influx, turnover)
-        tSI.append(tSI[-1] + dSIR*dt)
+    while tSEI[-1][0]<tmax:
+        dSEIR = dSIRdt(tSEI[-1], beta, eps, theta, rec, influx, turnover, incubation)
+        tSEI.append(tSEI[-1] + dSEIR*dt)
 
-    return np.array(tSI)
+    return np.array(tSEI)
+
 
 def cost(traj, prevalence, plot=False, dt=0.001):
-    avg = np.mean(np.array([[traj[-int((y+(11.5-m)/12)/dt),2] for y in range(10)]
+    avg = np.mean(np.array([[traj[-int((y+(11.5-m)/12)/dt),3] for y in range(10)]
             for m in range(12)]), axis=1)
 
     C = np.sum((avg/avg.mean() - prevalence/prevalence.mean())**2)
@@ -47,6 +49,7 @@ def cost(traj, prevalence, plot=False, dt=0.001):
     print(C)
     return C
 
+
 if __name__ == '__main__':
     # read average seasonal test-positive rate.
     df = pd.read_csv('data/frac_positive_by_month.tsv', sep='\t')
@@ -55,7 +58,8 @@ if __name__ == '__main__':
     # 1/week is 52/year
 
     R0 = 3
-    rec = 36
+    rec = 72
+    incubation = 5/365
     eps = 0.5
     theta = -0.15
     influx = 1e-3
@@ -63,7 +67,7 @@ if __name__ == '__main__':
     dt=0.001
     tmax = 30
 
-    X0 = (R0*rec, eps, theta, rec, influx, turnover)
+    X0 = (R0*rec, eps, theta, rec, influx, turnover, incubation)
     traj = run_SIR(X0, tmax, dt=dt)
     prevalence = df["all CoVs"]
     cost(traj, prevalence, dt=dt)
@@ -81,10 +85,10 @@ if __name__ == '__main__':
         X= (R0*rec, eps, theta, rec, influx, turnover)
         traj = run_SIR(X, tmax, dt)
         num_points = len(traj)
-        print(R0, influx, eps, np.mean(traj[num_points//2:,2]))
-        # amplitudes.append(np.std(traj[num_points//2:,2])/np.mean(traj[num_points//2:,2]))
-        amplitudes.append(np.max(traj[3*num_points//4:,2])/np.min(traj[3*num_points//4:,2]))
-        means.append(np.mean(traj[num_points//2:,2]))
+        print(R0, influx, eps, np.mean(traj[num_points//2:,3]))
+        # amplitudes.append(np.std(traj[num_points//2:,3])/np.mean(traj[num_points//2:,3]))
+        amplitudes.append(np.max(traj[3*num_points//4:,3])/np.min(traj[3*num_points//4:,3]))
+        means.append(np.mean(traj[num_points//2:,3]))
         costs.append(cost(traj, prevalence, dt=dt))
 
 

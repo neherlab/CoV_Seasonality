@@ -1,13 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from compartment_model import dSIRdt_vec
+from compartment_model import dSIRdt_vec, migrate
 from scipy.stats import poisson
 from peak_ratio import month_lookup
 from matplotlib.cm import plasma
 from matplotlib.colors import to_hex
 
 
-rec = 36   # 10 day serial interval
+rec = 72   # 10 day serial interval
+incubation = 5/365
 nb_pts = 4
 R0s = np.linspace(1.3,2.5,nb_pts)
 migrations = np.logspace(-3, -1, nb_pts)
@@ -20,12 +21,12 @@ for ii,migration in enumerate(migrations):
 
         # add Hubei population with parameters specified above
         #          population size, beta, rec, eps, theta, NH, containment, migration
-        params = [[N0, R0*rec, rec, 0.4, 0.0, 1,     0.5, migration],
-                  [N1, R0*rec, rec, 0.5, 10.5/12, 1, 0.5, migration],
-                  [N1, R0*rec, rec, 0.5, 0.5/12, 1,  0.5, migration],
-                  [N1, R0*rec, rec, 0.5, 2.5/12, 1,  0.5, migration]]
+        params = [[N0, R0*rec, rec, 0.4, 0.0, 1,     0.5, migration, incubation],
+                  [N1, R0*rec, rec, 0.5, 10.5/12, 1, 0.5, migration, incubation],
+                  [N1, R0*rec, rec, 0.5, 0.5/12, 1,  0.5, migration, incubation],
+                  [N1, R0*rec, rec, 0.5, 2.5/12, 1,  0.5, migration, incubation]]
         # initially fully susceptible with one case in Hubei, no cases in NH
-        populations = [[1, 1/N0], [1,0], [1,0], [1,0]]
+        populations = [[1, 0, 1/N0], [1,0, 0], [1,0, 0], [1,0, 0]]
         #total number of populations
         n_pops = len(params)
 
@@ -38,12 +39,9 @@ for ii,migration in enumerate(migrations):
         dt = 0.001
         tmax = 2021.5
         while t[-1]<tmax:
-            dS, dI = dSIRdt_vec(populations[-1][:,0], populations[-1][:,1], t[-1], params)
-            populations.append(populations[-1] + dt*np.array([dS,dI]).T)
-
-            I_tot = (params[:,0]*populations[-1][:,1]).sum()
-            populations[-1][:,1] += poisson.rvs(I_tot/n_pops*dt*params[:,7])/params[:,0]
-            populations[-1][populations[-1][:,1]<1/params[:,0],1] = 0
+            dS, dE, dI = dSIRdt_vec(populations[-1][:,0], populations[-1][:,1], populations[-1][:,2], t[-1], params)
+            populations.append(populations[-1] + dt*np.array([dS,dE,dI]).T)
+            migrate(populations[-1], params, dt)
             t.append(t[-1]+dt)
 
         populations = np.array(populations)
@@ -56,7 +54,7 @@ for ii,migration in enumerate(migrations):
         axes[ii,jj].plot(t, populations[:,0,1]*params[0, 0], lw=3, label='Hubei', ls='--', c=colors[0])
 
         for pi in range(1,len(params)):
-            axes[ii,jj].plot(t, populations[:,pi,1]*params[pi, 0], c=colors[pi],
+            axes[ii,jj].plot(t, populations[:,pi,2]*params[pi, 0], c=colors[pi],
                     lw=3, label=r"NE $\theta=$" + f'{month_lookup[int(params[pi,4]*12-0.5)]}')
 
         if (ii==0 and jj==nb_pts-1):
