@@ -45,7 +45,7 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
     case_counts = pd.read_csv('data/case_counts.tsv', sep='\t')
     # add Hubei population with parameters specified above
     #          population size, beta, rec, eps, theta, NH, containment, relative migration
-    params = [[N0, R0*rec, rec, eps0, theta0, 1, containment_hubei, 1.0]]
+    params = [[N0, R0*rec, rec, eps0, theta0, migration, containment_hubei, 1.0]]
     # initially fully susceptible with one case
     populations = [[1, 1/N0]]
 
@@ -202,6 +202,6 @@ if __name__ == '__main__':
         plot_many_population_scenario(R0=R0, t0=t0, eps_temperate=0.5, R0_sigma=0.5, tmax=2022,
                                       population_turnover=0.0, containment_hubei=0.5)
 
-    # for t0, R0 in zip([2019.6, 2019.8, 2020], [1.4, 1.8, 2.7]):
-    #     plot_many_population_scenario(R0=R0, t0=t0, eps_temperate=0.5, R0_sigma=0.5,
-    #                                   tmax=2032, population_turnover=0.1, plot_three_panel=False)
+    for t0, R0 in zip([2019.6, 2019.8, 2020], [1.4, 1.8, 2.7]):
+        plot_many_population_scenario(R0=R0, t0=t0, eps_temperate=0.5, R0_sigma=0.5,
+                                      tmax=2032, population_turnover=0.1, plot_three_panel=False)
