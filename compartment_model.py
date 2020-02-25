@@ -30,6 +30,10 @@ def migrate(pop, params, dt):
         pop[:,i] += poisson.rvs(N_tot/n_pops*dt*params[:,7])/params[:,0]
 
 
+def resample(pop, params, overdispersion=1):
+    return (poisson.rvs(pop.T*params[:,0]/overdispersion)/params[:,0]*overdispersion).T
+
+
 def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5, eps_tropical=0.2,
                                   R0_sigma=0.5, population_turnover=0.1, containment_hubei=0.5,
                                   containment_world_range=0.5, plot_three_panel=True):
@@ -58,7 +62,7 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
     #          population size, beta, rec, eps, theta, NH, containment, relative migration
     params = [[N0, R0*rec, rec, eps0, theta0, 1, containment_hubei, hubei_migration, incubation]]
     # initially fully susceptible with one case
-    populations = [[1, 0, 1/N0]]
+    populations = [[1, 0, 100/N0]]
 
     # construct other populations
     for i in range(n_pops-1):
@@ -91,11 +95,16 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
     # start simulation
     t = [t0]
     dt = 0.001
+    last_resample = t[-1]
+    resampling_interval = 1/52
     while t[-1]<tmax:
         dS, dE, dI = dSIRdt_vec(populations[-1][:,0], populations[-1][:,1],populations[-1][:,2], t[-1],
                                 params, turnover=population_turnover)
         populations.append(populations[-1] + dt*np.array([dS, dE, dI]).T)
         migrate(populations[-1], params, dt)
+        if t[-1]-last_resample>resampling_interval:
+            populations[-1] = resample(populations[-1], params, overdispersion=10)
+            last_resample = t[-1]
         t.append(t[-1]+dt)
 
     populations = np.array(populations)
@@ -170,8 +179,8 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
             ax.set_yscale('log')
             if ax==axs[0]:
                 ax.set_ylabel('Cases', fontsize=fs)
-            ax.set_xticks(np.array([2020.05, 2020.5, 2021.05, 2021.5, 2022.05]))
-            ax.set_xticklabels(['2020-01', '2020-07', '2021-01', '2021-07', '2022-01'], horizontalalignment='right')
+            ax.set_xticks(np.array([2020.0, 2020.5, 2021.0, 2021.5, 2022.0]))
+            ax.set_xticklabels(['2020-01-01', '2020-07-01', '2021-01-01', '2021-07-01', '2022-01-01'], horizontalalignment='right')
             ax.tick_params(axis='x', labelsize=0.8*fs, labelrotation=30)
             ax.tick_params(axis='y', labelsize=0.8*fs)
             ax.set_ylim([1,total_inf[:].max()*2])
@@ -207,11 +216,13 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
 
 
 if __name__ == '__main__':
+    t0_vec = [2019.8, 2019.9, 2020.0]
+    R0_vec = [1.4, 1.8, 2.7]
 
-    for t0, R0 in zip([2019.6, 2019.8, 2020], [1.4, 1.8, 2.7]):
+    for t0, R0 in zip(t0_vec, R0_vec):
         plot_many_population_scenario(R0=R0, t0=t0, eps_temperate=0.5, R0_sigma=0.5, tmax=2022,
                                       population_turnover=0.0, containment_hubei=0.5)
 
-    # for t0, R0 in zip([2019.6, 2019.8, 2020], [1.4, 1.8, 2.7]):
-    #     plot_many_population_scenario(R0=R0, t0=t0, eps_temperate=0.5, R0_sigma=0.5,
-    #                                   tmax=2032, population_turnover=0.1, plot_three_panel=False)
+    for t0, R0 in zip(t0_vec, R0_vec):
+        plot_many_population_scenario(R0=R0, t0=t0, eps_temperate=0.5, R0_sigma=0.5,
+                                      tmax=2032, population_turnover=0.1, plot_three_panel=False)
