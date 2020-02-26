@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from compartment_model import dSIRdt_vec, migrate
+from compartment_model import trajectory
 from scipy.stats import poisson
 from peak_ratio import month_lookup
 
@@ -10,13 +10,15 @@ if __name__ == '__main__':
     migration = 1e-2 # rate of moving per year
     N0,N1 = 6e7,1e8
     incubation_time = 5/365
+    eps_hubei = 0.4
+    eps = 0.5
 
     # add Hubei population with parameters specified above
     #          population size, beta, rec, eps, theta, NH, containment, migration
-    params = [[N0, 1.8*rec, rec, 0.4, 0.0, 1,     0.5, migration, incubation_time],
-              [N1, 1.8*rec, rec, 0.5, 10.5/12, 1, 0.5, migration, incubation_time],
-              [N1, 1.8*rec, rec, 0.5, 0.5/12, 1,  0.5, migration, incubation_time],
-              [N1, 1.8*rec, rec, 0.5, 2.5/12, 1,  0.5, migration, incubation_time]]
+    params = [[N0, 1.8*rec, rec, eps_hubei, 0.0, 1,     0.5, migration, incubation_time],
+              [N1, 1.8*rec, rec, eps, 10.5/12, 1, 0.5, migration, incubation_time],
+              [N1, 1.8*rec, rec, eps, 0.5/12, 1,  0.5, migration, incubation_time],
+              [N1, 1.8*rec, rec, eps, 2.5/12, 1,  0.5, migration, incubation_time]]
     # initially fully susceptible with one case in Hubei, no cases in NH
     populations = [[1, 0, 1/N0], [1,0,0], [1,0,0], [1,0,0]]
     #total number of populations
@@ -24,19 +26,14 @@ if __name__ == '__main__':
 
 
     params = np.array(params)
-    populations = [np.array(populations)]
+    initial_population = np.array(populations)
 
     # start simulation
-    t = [2019.8]
     dt = 0.001
+    t0 = 2019.9
     tmax = 2021.5
-    while t[-1]<tmax:
-        dS, dE, dI = dSIRdt_vec(populations[-1][:,0], populations[-1][:,1],  populations[-1][:,2], t[-1], params)
-        populations.append(populations[-1] + dt*np.array([dS,dE, dI]).T)
-        migrate(populations[-1], params, dt)
-        t.append(t[-1]+dt)
-
-    populations = np.array(populations)
+    t, populations = trajectory(initial_population, t0, tmax, dt, params,
+                                resampling_interval=0, turnover=0)
 
     from matplotlib.cm import plasma
     from matplotlib.colors import to_hex

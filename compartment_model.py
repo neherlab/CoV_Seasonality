@@ -34,6 +34,23 @@ def resample(pop, params, overdispersion=1):
     return (poisson.rvs(pop.T*params[:,0]/overdispersion)/params[:,0]*overdispersion).T
 
 
+def trajectory(initial_pops, t0, tmax, dt, params, resampling_interval=1/52, turnover=0):
+    populations = [initial_pops]
+    t = [t0]
+    last_resample = t[-1]
+    while t[-1]<tmax:
+        dS, dE, dI = dSIRdt_vec(populations[-1][:,0], populations[-1][:,1],populations[-1][:,2], t[-1],
+                                params, turnover=turnover)
+        populations.append(populations[-1] + dt*np.array([dS, dE, dI]).T)
+        migrate(populations[-1], params, dt)
+        if resampling_interval>0 and t[-1]-last_resample>resampling_interval:
+            populations[-1] = resample(populations[-1], params, overdispersion=10)
+            last_resample = t[-1]
+        t.append(t[-1]+dt)
+
+    return t, np.array(populations)
+
+
 def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5, eps_tropical=0.2,
                                   R0_sigma=0.5, population_turnover=0.1, containment_hubei=0.5,
                                   containment_world_range=0.5, plot_three_panel=True):
@@ -54,6 +71,7 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
     theta_temperate_sigma = 0.1  # standard deviation of the distribution of peak x-missibility in temperate regions
     regions = {"Northern temperate":1, "Tropical":0,  "Southern temperate":-1}
     under_reporting = 3
+    dt=0.001
 
     #total number of populations
     n_pops = 1000
@@ -62,9 +80,9 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
     #          population size, beta, rec, eps, theta, NH, containment, relative migration
     params = [[N0, R0*rec, rec, eps0, theta0, 1, containment_hubei, hubei_migration, incubation]]
     # initially fully susceptible with one case
-    populations = [[1, 0, 100/N0]]
+    initial_pops = [[1, 0, 100/N0]]
 
-    # construct other populations
+    # construct other initial_pops
     for i in range(n_pops-1):
         tmp = np.random.random() # draw NH, SH, tropical
         if tmp<0.4: # according to http://worldpopulationreview.com/countries/tropical-countries/
@@ -86,28 +104,13 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
         N = np.random.lognormal(np.log(world_population/n_pops)-popsize_sigma**2/2,popsize_sigma)
         containment = np.random.random()*containment_world_range
         # add initially uninfected population and parameters
-        populations.append([1, 0, 0])
+        initial_pops.append([1, 0, 0])
         params.append([N, beta, rec, eps, theta, climate, containment, migration_rate, incubation])
 
     params = np.array(params)
-    populations = [np.array(populations)]
-
     # start simulation
-    t = [t0]
-    dt = 0.001
-    last_resample = t[-1]
-    resampling_interval = 1/52
-    while t[-1]<tmax:
-        dS, dE, dI = dSIRdt_vec(populations[-1][:,0], populations[-1][:,1],populations[-1][:,2], t[-1],
-                                params, turnover=population_turnover)
-        populations.append(populations[-1] + dt*np.array([dS, dE, dI]).T)
-        migrate(populations[-1], params, dt)
-        if t[-1]-last_resample>resampling_interval:
-            populations[-1] = resample(populations[-1], params, overdispersion=10)
-            last_resample = t[-1]
-        t.append(t[-1]+dt)
-
-    populations = np.array(populations)
+    t, populations = trajectory(np.array(initial_pops), t0, tmax, dt, params,
+                                resampling_interval=1/52, turnover=population_turnover)
     # weigh each infection trajectory by its population size
     total_inf = (params[:,0]*populations[:,:,2]).sum(axis=1)
     params_by_region = {r:params[params[:,5]==regions[r],:] for r in regions}
