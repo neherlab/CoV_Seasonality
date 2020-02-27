@@ -9,7 +9,20 @@
 \usepackage{soul}
 \usepackage{multirow}
 \usepackage{longtable}
-
+\usepackage{xr-hyper}
+\makeatletter
+\newcommand*{\addFileDependency}[1]{% argument=file name and extension
+  \typeout{(#1)}
+  \@addtofilelist{#1}
+  \IfFileExists{#1}{}{\typeout{No file #1.}}
+}
+\makeatother
+ 
+\newcommand*{\myexternaldocument}[1]{%
+    \externaldocument{#1}%
+    \addFileDependency{#1.tex}%
+    \addFileDependency{#1.aux}%
+}
 
 \definecolor{drab}{rgb}{0.59, 0.44, 0.09}
 \newcommand{\Richard}[1]{{\color{drab}Richard: #1}}
@@ -21,6 +34,8 @@
 \newcommand{\Emma}[1]{{\color{purple}Emma: #1}}
 \definecolor{green}{rgb}{0.15, 0.6, 0.15}
 \newcommand{\Valentin}[1]{{\color{green}Valentin: #1}}
+\newcommand{\forcing}{\varepsilon}
+\myexternaldocument{supplement}
 
 
 \begin{document}
@@ -47,12 +62,13 @@
 \date{\today}
 
 \begin{abstract}
-A novel coronavirus (SARS-CoV-2) first detected in Wuhan, China, has spread rapidly since December 2019, causing over 45,000 PCR confirmed infections and more than 1,000 fatalities (as of Feb 12, 2020). Imported cases and small transmission clusters have been reported globally.
-Early data suggest the virus transmits readily and a pandemic cannot be ruled out.
-Data from routine diagnostics show a strong and consistent seasonal variation of the four endemic coronaviruses (229E, HKU1, NL63, OC43). We use these data to explore the effect of seasonal variation in transmissibility on a potential SARS-CoV-2 pandemic. 
-A model allowing for many subpopulations of different size with variable parameters of SARS-CoV-2 spread shows how a pandemic could unfold in 2020-2022.
+A novel coronavirus (SARS-CoV-2) first detected in Wuhan, China, has spread rapidly since December 2019, causing more than 80,000 confirmed infections and 2,700 fatalities (as of Feb 27, 2020). Imported cases and transmission clusters of various sizes have been reported globally suggesting a pandemic is likely.
+
+Here, we explore how seasonal variation in transmissibility could modulate a SARS-CoV-2 pandemic.
+Data from routine diagnostics show a strong and consistent seasonal variation of the four endemic coronaviruses (229E, HKU1, NL63, OC43) and we parameterize our model for SARS-CoV-2 using these data.
+The model allows for many subpopulations of different size with variable parameters.
 Simulations of different scenarios show that plausible parameters result in a peak in temperate regions of the Northern Hemisphere in winter 2020/2021. 
-A smaller range of parameters suggests a peak in the first half of 2020 or two peaks of similar magnitude. 
+A smaller range of parameters suggests a dominant peak in the dominant first half of 2020 or two peaks of similar magnitude. 
 Variation in transmission and migration rates can result in substantial variation in prevalence between regions.
 
 While the uncertainty in parameters is large, the scenarios we explore show that transient reductions in the incidence rate might be due to a combination of seasonal variation and infection control efforts but do not necessarily mean the epidemic is contained. 
@@ -64,13 +80,13 @@ The likely aggregated effect of seasonal variation, infection control measures, 
 
 % \section{Introduction}
 
-On Jan 30, 2020, the World Health Organisation (WHO) declared the spread of a new coronavirus, SARS-CoV-2 \citep{ICTV_SARS-CoV-2}), as a public health emergency of international concern \citep{WHO_statement}.
+On Jan 30, 2020, the World Health Organisation (WHO) declared the spread of a new coronavirus, SARS-CoV-2 \citep{ICTV_SARS-CoV-2}, as a public health emergency of international concern \citep{WHO_statement}.
 The virus was first identified in patients with pneumonia in the city of Wuhan in the Hubei province, China, in December 2019 \citep{Liangjun2020rna}.
 The clinical presentation of the illness caused by SARS-CoV-2, called COVID-19, appears to range from mild or asymptomatic to severe and fatal respiratory illness \citep{WHO_situation_report23}, but the exact spectrum of disease presentation is still unclear. 
 The potential for global spread, i.e.~a pandemic, of SARS-CoV-2 is currently not known, but the virus has spread at an alarming rate in Wuhan, the epicenter of the outbreak. Furthermore, the virus has spread to all provinces of China and small clusters of local spread have been reported from several countries, e.g. Singapore, Germany, and the UK \citep{WHO_situation_report23, rothe2020transmission, MOH_Singapore}. 
 
-The basic reproduction number ($R_0$), which describes the average number of new infections per infected SARS-CoV-2 case, has been estimated to be around $R_0 = 2 \ldots 3$ (2.2  with 90\% high density interval 1.4–3.8 \citep{Riou2020pattern} or 2.7 with a 95\% CrI of 2.47–2.86 \citep{wu_nowcasting_2020})
-Higher estimates have also been reported \citep{yang_epidemiological_2020}. Importantly, $R_0$ is not a biological constant for a pathogen, but is affected by factors such as environmental conditions and the behaviour of infected individuals. One such environmental factor is climate which modulates transmissibility throughout the year. 
+The basic reproduction number ($R_0$), which describes the average number of new infections per infected SARS-CoV-2 case, has been estimated to be around $R_0 = 2 - 3$ (2.2  with 90\% high density interval 1.4–3.8 \citep{Riou2020pattern} or 2.7 with a 95\% CrI of 2.47–2.86 \citep{wu_nowcasting_2020}).
+Higher estimates have also been reported \citep{yang_epidemiological_2020,sanche_novel_2020}. Importantly, $R_0$ is not a biological constant for a pathogen, but is affected by factors such as environmental conditions and the behaviour of infected individuals. One such environmental factor is climate which modulates transmissibility throughout the year. 
 As a result, many respiratory viruses show clear seasonal variation in prevalence; the most well-known example being seasonal influenza which peaks every winter in the temperate zone of the Northern Hemisphere \citep{petrova_evolution_2018}. 
 A similar pattern is seen for the four seasonal human coronaviruses: HKU1, NL63, OC43 and 229E (hereafter collectively referred to as ``seasonal CoVs'') \citep{killerby2018human,goes2019typical,galanti2019longitudinal,friedman2018human,al2016diversity,huang2017epidemiology}. 
 These viruses cause respiratory infections which usually are mild and primarily affect young children. 
@@ -105,44 +121,52 @@ The strength of variation of the transmission rate through the year could be of 
 \end{figure*}
 
 \section{Basic model}
-We consider simple SIR models \citep{kermack_contributions_1991} of the form 
+We consider simple SIR models \citep{kermack_contributions_1991} with an additional category $E$ of exposed individuals of the form 
 \begin{equation}
 \begin{split}
 \frac{d}{dt} S & = b(1-S) - \beta(t) S I \\
-\frac{d}{dt} I & = -(\nu+b+e) I + \beta(t) S I + i\\
-R & = 1-S-I
+\frac{d}{dt} E & = \beta(t) S I - \mu E\\
+\frac{d}{dt} I & = \mu E - (\nu+b) I \\
+R & = 1-S-I-E
 \end{split}
 \label{eq:SIR}
 \end{equation}
-where $\beta(t)$ is the rate at which an infected individual infects a susceptible one, $\nu$ is the recovery rate, $b$ is the population turn-over rate, $e$ is the emigration rate, and $i$ is the influx of infected individuals.
+where $\beta(t)$ is the rate at which an infected individual infects a susceptible one, $\mu$ is the inverse incubation time, $\nu$ is the recovery rate and $b$ is the population turn-over rate. 
+Depending on the analysis below, we implement several such populations that exchange individuals through migration, for details see Supplementary Methods. 
+Stochasticity is implemented through Poisson resampling of the population once every serial intervals $\mu^{-1}+\nu^{-1}$.
 The population turnover rate is immaterial for a pandemic scenario, but important for our analysis of seasonal CoV, and should be interpreted as the sum of the birth rate and the rate at which previously immune individuals become susceptible due to immune waning and escape.
 We review general properties of such model in the Supplementary Materials. 
 Following previous work, we parameterize transmissibility as 
 \begin{equation}
-\beta(t) = \beta_0\left(1+\epsilon\cos(2\pi (t-\theta))\right)
+\beta(t) = \beta_0\left(1+\forcing\cos(2\pi (t-\theta))\right)
 \label{eq:transmissibility}
 \end{equation}
-where $\beta_0$ is the average annual infection rate, $\epsilon$ is the amplitude of seasonal forcing which modulates transmissibility through the year, and $\theta$ is the time of peak transmissibility \citep{dushoff_dynamical_2004,chen_regular_2017}.
+where $\beta_0$ is the average annual infection rate, $\forcing$ is the amplitude of seasonal forcing which modulates transmissibility through the year, and $\theta$ is the time of peak transmissibility \citep{dushoff_dynamical_2004,chen_regular_2017}.
 For simulations of the pandemic, we will add an additional term to $\beta(t)$ that accounts for infection control measures in heavily affected areas, see Supplementary Materials.
 
 \begin{figure}
     \centering
-    \includegraphics[width=\columnwidth]{figures/fit_2.5.pdf}
-    \caption{{\bf Compatibility of SIR model trajectory with observations.} The heatmap shows the inverse mean squared deviation between the model trajectories and the observed seasonal forcing in seasonal CoV prevalence. Model and observations are compatible (yellow shading) in a region of parameter values corresponding to low migration/weak seasonality and second region at high migration/strong seasonality. }
+    \includegraphics[width=\columnwidth]{figures/fit_2.3.pdf}
+    \caption{{\bf Compatibility of SIR model trajectory with observations.} The heatmap shows the inverse mean squared deviation between the model trajectories and the observed seasonal forcing in seasonal CoV prevalence. Model and observations are compatible (yellow shading) in a region of parameter values corresponding to low migration/weak seasonality and second region at high migration/strong seasonality.}
     \label{fig:parameter_seasonal}
 \end{figure}
 
 \section{Model parameterization using seasonal CoV observations}
 Seasonal CoVs are endemic throughout the world and we therefore expect that viruses are imported throughout the year. 
-We model this import as a constant influx $i$. 
-Furthermore, we assume that humans suffer from a seasonal CoV infection on average every 10 years ($b=0.1/y$), an $R_0=2.5$, and a recovery rate (time between infections) of 10 days.
+We model this import through migration of susceptible individuals with rate $m$ that return exposed with probability $x$. 
+Humans develop immune responses to CoVs rapidly and subsequent challenge studies show reduced susceptibility and less severe disease for a year \citep{callow_time_1990}.
+Antibodies against SARS-CoV-1 persist for several years \citep{guo_long-term_2020}. 
+This is consistent with the observation that about 50\% of all positive samples in our data come from patients older than 10 years with a flat distribution across age groups.
+In analogy to the attack rate of seasonal influenza, we assume humans suffer from a seasonal CoV infection on average every 10 years ($b=0.1/y$).
+Furthermore, we use $\langle R_0\rangle=2.3$, a recovery rate of $1/5 \mathrm{days}^{-1}$, and an incubation period of 5 days.
 
 With these assumptions, we can solve the model and compare the resulting trajectories to the seasonal variation in prevalence of seasonal CoVs, see Fig.~\ref{fig:parameter_seasonal}.
-We assess fit quality by calculating the squared deviation of observed and predicted prevalence relative to their respective mean values. 
-Simulations of the model are compatible with observations in two separate regions of parameter space: If Northern Europe was very isolated with less than 1 in 1,000 individuals returning with a seasonal CoV infection from abroad, weak seasonality of around $\epsilon=0.15$ would be sufficient to generate strong variation through the year compatible with observations (Fig.~\ref{fig:parameter_seasonal}, bottom-left ridge).
+In Stockholm, seasonal variation of CoVs (especially HKU1/OC43) is very consistent across years (see Fig.~S\ref{fig:seasonal_variation_supp}). 
+We therefore fit the SIER model to the average seasonal variation across years by calculating the squared deviation of observed and predicted prevalence relative to their respective mean values. 
+Simulations of the model are compatible with observations in two separate regions of parameter space: If Northern Europe was very isolated with less than 1 in 1,000 individuals returning with a seasonal CoV infection from abroad each year, weak seasonality of around $\forcing=0.15$ would be sufficient to generate strong variation through the year compatible with observations (Fig.~\ref{fig:parameter_seasonal}, bottom-left ridge).
 In this regime, prevalence is oscillating intrinsically with a period that is commensurate with annual seasonal oscillations giving rise to a resonance phenomenon with annual or biennial patterns even for weak seasonal forcing \citep{dushoff_dynamical_2004,chen_regular_2017}.
 
-If the rate of import of seasonal CoV infections is higher, imports dampen the resonance and much stronger seasonality, with values between $\epsilon=0.3$ and $0.7$, is required to fit the observations (Fig.~\ref{fig:parameter_seasonal}, top-right-and-center ridge).
+If the rate of import of seasonal CoV infections is higher, imports dampen the resonance and much stronger seasonality, with values between $\forcing=0.3$ and $0.7$, is required to fit the observations (Fig.~\ref{fig:parameter_seasonal}, top-right-and-center ridge).
 In this regime, seasonal variation in transmissibility modulates the size of micro-outbreaks triggered by imported cases in a mostly immune population. 
 
 These two scenarios differ slightly in the time of year at which peak transmissibility $\theta$ occurs: 
@@ -150,6 +174,7 @@ When transmission is mostly local and seasonality is amplified by resonance, $\t
 In the second scenario with high connectivity, $\theta$ needs to be in December--January coinciding with the peak in prevalence.
 Given that most countries are highly connected, we focus here on exploring the high-import and strong seasonal forcing scenario.
 This scenario, with maximal $\beta$ in mid-winter, is also more compatible with climate variation around the year.
+The qualitative behavior of the fit is robust to uncertainty in $R_0$ and the frequency of reinfection $b$.
 
 
 \begin{figure*}
@@ -158,28 +183,27 @@ This scenario, with maximal $\beta$ in mid-winter, is also more compatible with 
     \includegraphics[width=\columnwidth]{figures/peak_ratio_0.5.pdf}
 \caption{{\bf Model predictions for SARS-CoV-2 case numbers in temperate zones for a pandemic scenario}. The left panel shows example trajectories assuming SARS-CoV-2 transmissibility peaks in November, January, or March. 
 These outbreaks in Northern Europe (`NE') are assumed to be seeded by the outbreak in Hubei (model trajectory shown as a dashed line).
-Within the model, these cases are exported at rate of 0.01/year to temperate Northern Europe with an average $\langle R_0\rangle = 1.8$ and seasonal forcing of $\epsilon=0.5$. Corresponding graphs for different values of $\langle R_0\rangle$ and the migration rate are shown in Supplemental Fig.~\ref{fig:scenarios_supp}.
+Within the model, these cases are exported at rate of 0.01/year to temperate Northern Europe with an average $\langle R_0\rangle = 2.2$ and seasonal forcing of $\forcing=0.5$. Corresponding graphs for different values of $\langle R_0\rangle$ and the migration rate are shown in Supplemental Fig.~S\ref{fig:scenarios_supp}.
 The right panel shows the ratio of the first and second peak for a range of different combinations of $R_0$ and $\theta$. 
 The yellow area corresponds to parameter combinations with essentially only an early peak similar to the yellow line on the left. 
 The blue/purple area shows parameter combinations for which a peak in late 2020 dominates, as with the purple line on the left, while the central pink/orange band shows the combinations giving rise to two comparable peaks. 
-These simulations are for $\epsilon=0.5$. Similar results were obtained for $\epsilon=0.3$ and 0.7, see Supplementary  Fig.~\ref{fig:peak_ratio_supp}.}
+These simulations are for $\forcing=0.5$. Similar results were obtained for $\forcing=0.3$ and 0.7, see Supplementary  Fig.~\ref{fig:peak_ratio_supp}.}
     \label{fig:nCov_predictions}
 \end{figure*}
 
 \section{Scenarios for SARS-CoV-2 pandemics in 2020 and 2021}
 \label{section:sars_pandemic_regional}
 The analysis of seasonal CoV prevalence patterns allowed us to constrain parameter ranges and explore different scenarios of SARS-CoV-2 spread around the globe, in particular in temperate climates like Northern Europe. 
-Here we explore scenarios where temperate regions have a seasonal forcing of between $\epsilon=0.3$ and $0.7$ and migration rates of $0.01$/year. 
-Early estimates suggest an incubation time of about 5 days \citep{backer_incubation_2020} and an average serial interval of 7-8 days \citep{wu_nowcasting_2020}, suggesting rapid transmission once symptoms set in. 
-Our model does not differentiate between symptomatic and asymptomatic cases. 
-Furthermore, the model does not account for the incubation time and therefore generates too many early transmissions. 
-We therefore use a slightly lower recovery rate of $\nu = 0.1/day$. 
-To match the $R_0$ estimates for the early outbreak with our parameterization of transmissibility in Eq.~\ref{eq:transmissibility} we need to account for the fact that December/January are winter months in Hubei and peak transmissibility in Hubei likely corresponds to $\theta\approx 0$ (0 being the beginning of the year, so a $\theta$ in December/January). An $R_0\approx 2.5$ in winter in Hubei and a seasonal forcing of $\epsilon=0.4$ implies an annual average $\langle R_0\rangle = \beta_0/\nu=1.8$.
-This reasoning leads to our parameter choice of $\beta_0=65$/year, $\nu=36$/year, $\theta=0$. 
+Here we explore scenarios where temperate regions have a seasonal forcing of between $\forcing=0.3$ and $0.7$ and migration rates of $0.01$/year. 
+Early estimates suggest an incubation time of about 5 days  and an average serial interval of 7-8 days \citep{wu_nowcasting_2020}, suggesting rapid transmission once symptoms set in. 
+Our model uses an average incubation time of 5 days \citep{backer_incubation_2020} and a recovery rate  
+
+To match the $R_0$ estimates for the early outbreak with our parameterization of transmissibility in Eq.~\ref{eq:transmissibility} we need to account for the fact that December/January are winter months in Hubei and peak transmissibility in Hubei likely corresponds to $\theta\approx 0$ (0 being the beginning of the year, so a $\theta$ in December/January). An $R_0\approx 3$ in winter in Hubei and a seasonal forcing of $\forcing=0.4$ implies an annual average $\langle R_0\rangle = \beta_0/\nu=2.2$.
+This reasoning leads to our parameter choice of $\beta_0=158$/year, $\nu=72$/year, $\theta=0$. 
 We assume the outbreak started at $t=2019.8$ in Hubei with one infected individual and use $N=6\times 10^{7}$ as population size.
 To incorporate infection control measures, transmissibility is reduced by 50\% once prevalence reached 3\% (third order Hill-function, see Supplemental Material).
-Introductions to a location like Northern Europe with $\epsilon=0.5$ (\textit{i.e.} slightly stronger seasonal forcing then Hubei) are assumed to happen at a rate of 0.01 per year for each infected individual elsewhere.
-The simulation of the SIR model in different regions is deterministic, but migration is implemented stochastically by Poisson resampling of the average number of migrating individuals. 
+Introductions to a location like Northern Europe with $\forcing=0.5$ (\textit{i.e.} slightly stronger seasonal forcing then Hubei) are assumed to happen at a rate of 0.01 per year for each infected individual elsewhere.
+The simulation of the SIER model in different regions is deterministic, but migration is implemented stochastically by Poisson resampling of the average number of migrating individuals. 
 Fig.~\ref{fig:nCov_predictions} shows simulated trajectories of SARS-CoV-2 prevalence in the temperate Northern Hemisphere assuming the outbreak started in Hubei early December 2019.
 Depending whether the peak transmissibility of SARS-CoV-2 in the northern temperate zone is in November, January, or March, the simulation predicts a main peak in the first half of 2020, a main peak in winter 2020/2021, or two similarly sized peaks.
 
@@ -187,13 +211,17 @@ To explore possible scenarios more systematically, we ran such simulations for a
 The right panel of Fig.~\ref{fig:nCov_predictions} shows the ratio of the height of these peaks for different values.
 Rapid growth (high $R_0$) and late transmission peaks result in a large peak in the first half 2020, while lower $R_0$ and transmission peaks in early winter favor a large secondary peak. 
 These two scenarios are separated by a band of parameter values that give rise to two pandemic waves in the winters of 2020 and 2021 in the Northern Hemisphere.
+Individual trajectories for a variety of parameter combinations are given in Fig.~S\ref{fig:scenarios_supp}.
+The qualitative behavior is robust to model perturbations and parameter variation as long as seasonal forcing is strong. 
+With weak forcing ($\forcing=0.15$), the model predicts a single peak for most combinations of $\langle R_0 \rangle$ and migration rates (see Fig.~S\ref{fig:scenarios_weak_supp}).
 
 The uncertainty in parameter values and the potential impact of infection control measures imply that all scenarios are plausible and should be considered when developing pandemic prevention and containment strategies.
 
 
 \section{Global projections}
-Outbreaks grow exponentially within well-mixed communities, and at a certain rate the virus will be carried to other regions and potentially seed new outbreaks. 
+In absence of control measures, outbreaks initially grow exponentially within well-mixed communities, and at a certain rate the virus will be carried to other regions and potentially seed new outbreaks. 
 Such export to new locations is initially unlikely, but becomes next to certain once the outbreak size exceeds the inverse probability that a given individual migrates while infected.
+We have witness such rapid dispersal to SARS-CoV-2 to many countries across the globe during January and February 2020.
 
 Every location has a different socio-economic profile such that the growth rate of the epidemic (and hence $R_0$) might differ. 
 The superposition of many such sub-populations with a range of $\langle R_0 \rangle$ values and seasonal variation in transmission will result in dynamics that are qualitatively different from a single population SIR model. 
@@ -202,8 +230,8 @@ In particular, such variation result in a pandemic spread out over 2 years befor
 Fig.~\ref{fig:global_3_panel} shows the result of such a simulation of 1,000 populations.
 Populations were divided between northern temperate (50\%), southern temperate (10\%), and tropical (40\%) and assigned parameters as follows:
 \begin{itemize}
-    \item $\langle R_0 \rangle$ was drawn from a normal distribution with mean $1.8$ (see Supplementary Fig.~\ref{fig:global_3_panel_supp} for $\langle R_0 \rangle=1.4$ and 2.7) and standard deviation $0.5$.
-    \item Seasonal forcing $\epsilon$ was drawn from a uniform distribution between 0.25 and 0.75 for temperate regions, between 0 and 0.2 for tropical regions.
+    \item $\langle R_0 \rangle$ was drawn from a normal distribution with mean $2.2$ (see Supplementary Fig.~\ref{fig:global_3_panel_supp} for $\langle R_0 \rangle=1.5$ and 3.0) and standard deviation $0.5$.
+    \item Seasonal forcing $\forcing$ was drawn from a uniform distribution between 0.25 and 0.75 for temperate regions, between 0 and 0.2 for tropical regions.
     \item Peak transmissibility $\theta$ of temperate regions was drawn from normal distributions with standard deviation $0.1$ and peak at $0$ for northern regions and 0.5 for southern regions. $\theta$ for tropical regions was chosen uniformly from between 0 and 1.  
     \item Population sizes were drawn from a log-normal distribution with $\sigma=1$ and a mean such that all populations sum to $7.6$ billion.
     \item Migration rates were sampled from a log-normal distribution with $\sigma=1$ and a mean of $0.01$.
@@ -217,8 +245,8 @@ In accordance with Fig.~\ref{fig:nCov_predictions}, this peak shifts more toward
 
 \begin{figure*}[tb]
     \centering
-    \includegraphics[width=\textwidth]{figures/global_3_panel_1.8.pdf}
-    \caption{{\bf Extended circulation through overlapping epidemics in variable subpopulations.} These simulations of a pandemic scenario assume 1,000 sub-populations with an average $\langle R_0\rangle$ of 1.8 and standard deviation $0.5$, 40\% of which have weak seasonal forcing $\epsilon \in [0,0.2]$ (tropical) and the remainder have strong variation with $\epsilon \in [0.25,0.75]$. The super-position of many variable epidemics can result in a global prevalence that decays only slowly through 2020 and 2021. 
+    \includegraphics[width=\textwidth]{figures/global_3_panel_2.2.pdf}
+    \caption{{\bf Extended circulation through overlapping epidemics in variable subpopulations.} These simulations of a pandemic scenario assume 1,000 sub-populations with an average $\langle R_0\rangle$ of 2.2 and standard deviation $0.5$, 40\% of which have weak seasonal forcing $\forcing \in [0,0.2]$ (tropical) and the remainder have strong variation with $\forcing \in [0.25,0.75]$. The super-position of many variable epidemics can result in a global prevalence that decays only slowly through 2020 and 2021. 
     Lighter lines have lower $R_0$, darker lines have higher $R_0$. 
     The actual observed case counts reported for Hubei are added (brown line) and multiplied by three to account for possible under-reporting of mild cases. A subset of 30 randomly chosen simulations are plotted for each region.
     Analogous figures for different $R_0$ parameter values are shown in Supplementary Fig.~\ref{fig:global_3_panel_supp}.}
@@ -231,7 +259,7 @@ After a pronounced low in 2020-2024, prevalence recovers and settles into a seas
 
 \begin{figure}
     \centering
-    \includegraphics[width=\columnwidth]{figures/global_endemic_1.8.pdf}
+    \includegraphics[width=\columnwidth]{figures/global_endemic_2.2.pdf}
     \caption{{\bf Transition to an endemic seasonal virus.} 
     If previously infected individuals can be reinfected after some time, as for example by seasonal influenza virus, SARS-CoV-2 could develop into a seasonal CoV that returns every winter. This would typically happen at much lower prevalence than peak pandemic levels. 
     This graph assumes reinfection on average every 10 years.}
@@ -240,7 +268,7 @@ After a pronounced low in 2020-2024, prevalence recovers and settles into a seas
 
 \section{Discussion}
 
-We report on the possible influence of seasonal variation on the spread of SARS-CoV-2 in the Northern Hemisphere, should the current outbreak progress to a pandemic. We find that seasonal variation in transmissibility has the potential to modulate the spread of SARS-CoV-2 with a wide range of possible outcomes that need to be taken into account when interpreting case counts and projecting the outbreak dynamics. 
+We report on the possible influence of seasonal variation on the spread of SARS-CoV-2 in the Northern Hemisphere, in a pandemic scenario. We find that seasonal variation in transmissibility has the potential to modulate the spread of SARS-CoV-2 with a wide range of possible outcomes that need to be taken into account when interpreting case counts and projecting the outbreak dynamics. 
 The onset of spring and summer could, for example, give the impression that SARS-CoV-2 has been successfully contained, only for infections to increase again in 2020-2021 winter season. 
 Even in Hubei virus circulation might decrease due to arrival of spring and summer but might increase again towards the end of the year.
 Whether a pandemic in the temperate regions of the Northern Hemisphere would peak early in 2020, late in 2020, or show multiple waves as H1N1pdm did in 2009, depends on the timing of peak transmissibility and the rate of spread ($R_0$ and serial interval).
@@ -248,11 +276,11 @@ Whether a pandemic in the temperate regions of the Northern Hemisphere would pea
 This study is meant as an exploration of how such a pandemic could unfold, not as a prediction of any particular scenario.
 The results we present are critically dependent on the assumptions
 i) that the outbreak will develop into a pandemic,
-ii) that the transmissibility of SARS-CoV-2 shows seasonal variability of sufficient strength (range $\epsilon=0.3$ to $0.7$), and  
+ii) that the transmissibility of SARS-CoV-2 shows seasonal variability of sufficient strength (range $\forcing=0.3$ to $0.7$), and  
 iii) that parameters like $R_0$ estimated from the early phase of the outbreak are comparable in other populations. 
 
-These assumptions are not implausible but not certain: cases of SARS-CoV-2 has been detected in 24 countries apart from China \citep{WHO_situation_report23}, and mild or asymptomatic cases make detection and thus prevention of spread by isolation challenging, \textit{e.g.} airport screening as a preventive measure is unlikely to prevent spread and local seeding \citep{quilty2020effectiveness}. 
-Person-to-person transmission of the virus has been documented in several countries outside of China. 
+These assumptions are not implausible but not certain: cases of SARS-CoV-2 has been in several countries in Asia apart from China, as well as in Europe, Africa, North America, and Australia \citep{WHO_situation_report37}, and mild or asymptomatic cases make detection and thus prevention of spread by isolation challenging, \textit{e.g.} airport screening as a preventive measure is unlikely to prevent spread and local seeding \citep{quilty2020effectiveness}. 
+Person-to-person transmission of the virus has been documented in several countries outside of China, including clusters in three regions in Italy \citep{ECDC_23feb}. 
 It is likely that not all exported cases have been detected, and some may have seeded outbreaks outside of China that have yet to be detected. It is estimated that if SARS-CoV-2 continues to spread in China, and particularly if the areas of Beijing and Shanghai are affected, the risk of importation of cases to Europe increases \citep{pullano2020novel}.
 
 The seasonal CoVs show a strong and consistent seasonal variation, and modeling suggests that this requires strong variation in transmissibility throughout the year.
@@ -282,111 +310,5 @@ JA conceived the idea of the study. RAN developed the model and simulations. JA 
 
 \newpage
 
-\appendix
-\setcounter{figure}{0}
-\renewcommand{\figurename}{Figure S}
-\setcounter{table}{0}
-\renewcommand{\tablename}{Table S}
-
-\section*{Supplementary information}
-
-The SIR model introduced in equations \ref{eq:SIR} describes the fraction of susceptible $S(t)$ and infected individuals $I(t)$ in a population. 
-The fraction of recovered individuals $R$ is $R=1 - S - I$. 
-A simplified scheme of the model is presented in figure \ref{fig:schemeSIR} with constant transmissibility ($\epsilon=0$ in equation \ref{eq:transmissibility}) and without emigration/influx ($e=0$ and $i=0$).
-The simplified system has a steady state
-\begin{equation}
-\begin{split}
-S_0 &= \frac{\nu + b}{\beta} = \frac{1}{R_0} \\
-I_0 & = \frac{b(R_0-1)}{\beta}
-\end{split}
-\label{eq:fixed_point}
-\end{equation}
-This steady state exists when the parameter $R_0 > 1$. For cases where $R_0 < 1$ the epidemic dies out as each infected person generate less than one subsequent infection. 
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.9\columnwidth]{figures/SIR}
-	\caption{Illustration of the SIR model used with its parameters.}\label{fig:schemeSIR}
-\end{figure}
-
-
-For our analysis of seasonal CoVs, it is instructive to study the stability of this steady state and show that the quantities $[S,I]$ tend to show damped oscillations around the fixed points in Eq.~\ref{eq:fixed_point} with a period
-\begin{equation}
-T = \frac{4\pi}{\sqrt{4b(\nu(R_0-1) - b) - R_0^2b^2}}
-\label{eq:period}
-\end{equation}
-This behavior is intrinsic to the system and holds whenever transmissibility is constant.
-
-SIR models can show resonance phenomena when the period is about one or two years \citep{dushoff_dynamical_2004,chen_regular_2017}.
-Resonance is less likely when the period is much longer than the the period of annual forcing.
-Fig.~\ref{fig:intrinsicPeriod} shows the intrinsic period for the parameter range considered. 
-In the center of the graph the intrinsic period is around 3 years, suggesting that resonance is not strong.
-
-In a fully susceptible population, the number of infected individuals initially grows as $I(t)\sim e^{(\beta-\nu-b)t} = e^{(R_0-1)t/(\nu+b)}$.
-The doubling time is $\tau_2 = (\nu+b)\log(2)/(R_0-1)$.
-Since $b\ll \nu$, we can safely neglect $b$ in the early phase of the pandemic, but it is important when interpreting endemic seasonal CoV data. 
-
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.9\columnwidth]{figures/Period_phase_space}
-	\caption{Length of the intrinsic period of the SIR model for $\beta$ and $\nu$ values in the range explored in this paper. The duration of immunity is assumed to be $10$ years. The dark blue region corresponds to $R_0<1$. }
-	\label{fig:intrinsicPeriod}
-\end{figure}
-
-
-\subsection*{Migration between subpopulations}
-
-The term $i$ and $e$ in equation \ref{eq:SIR} represent the influx and emigration in a population which we model as an exchange of infected individuals while ignoring the migration of susceptible or recovered individuals.
-Such migration is operating in Figures \ref{fig:nCov_predictions}, \ref{fig:global_3_panel} and \ref{fig:endemic}. 
-A proportion $e$ of the infected people are removed due to emigration while an influx $i$ is added.
-The influx $i$ of each population is computed as the product of the total number of infected people in all population, the migration rate of the population in question, and its size. 
-In that sense, the infected persons form a global ``reservoir'' from which each population takes its influx.
-
-\subsection*{Effect of infection control measures}
-The SIR model as formulated in Eq.~\ref{eq:SIR} accounts for seasonality but otherwise assumes the transmission dynamics is constant. 
-In reality, individuals change their behavior when they are aware of a contagious disease.
-This in particularly true for the current SARS-CoV-2 outbreak where tens of millions of people are under quarantine measures and travel restrictions.
-In order to account for such behavioral changes, we add a factor $H$ to equation \ref{eq:SIR} that modulates transmission:
-\begin{equation}
-\frac{d}{dt} I =  -(\nu+b+e) I + (1-H)\beta S I + i
-\end{equation}
-where $H = c\cdot\frac{I^3}{(K^3+I^3)}$ with $c$ the containment value. The term $H$ is a Hill function of order 3 and inflection point $K$. 
-We use this to model a decrease in the rate of new infection smoothly decrease by a factor $c$. 
-We used $c=0.5$ and $K=0.03$, implying that once a disease is at a prevalence of 3\%, containment measures reduce transmission by 50\%.
-The effect of prevention and control is difficult to assess at present and will certainly vary in time and space. 
-
-\begin{figure*}[h]
-	\centering
-	\includegraphics[width=0.9\textwidth]{figures/scenario_subplot.pdf}
-	\caption{{\bf Model predictions for SARS-CoV-2 case numbers in temperate zones for a pandemic scenario, with varying $R_0$ and Migration.} This is the same plot as shown on the left of Figure \ref{fig:nCov_predictions}, however here $\langle R_0\rangle$ varies from 1.3 - 2.5 and Migration varies from 0.1\% to 10\% per year. Higher migration rates (towards the bottom of the figure) result in earlier introductions and higher likelihood of a peak in early 2020. Similarly, higher $\langle R_0\rangle$ (towards the right of the figure) results in more rapid growth and a higher likelihood of an early peak.}
-	\label{fig:scenarios_supp}
-\end{figure*}
-
-\begin{figure*}[h]
-	\centering
-	\includegraphics[width=0.9\columnwidth]{{figures/peak_ratio_0.3}.pdf}
-	\includegraphics[width=0.9\columnwidth]{{figures/peak_ratio_0.7}.pdf}
-	\caption{{\bf Ratio of first and second peak in temperate zone pandemic scenarios, with varying seasonal forcing.} This figure is the same as plotted on the right of Figure \ref{fig:nCov_predictions}, but here seasonal forcing ($\epsilon$) is shown at $\epsilon=0.3$ (left) and $\epsilon=0.7$ (right). Figure \ref{fig:nCov_predictions} uses $\epsilon=0.5$.}
-	\label{fig:peak_ratio_supp}
-\end{figure*}
-
-\begin{figure*}[h]
-	\centering
-	{\large$R_0=1.4$}
-	\includegraphics[width=\textwidth]{{figures/global_3_panel_1.4}.pdf}	{\large$R_0=2.7$}
-	\includegraphics[width=\textwidth]{{figures/global_3_panel_2.7}.pdf}
-	\caption{{\bf Extended circulation through overlapping epidemics  in variable subpopulations, with varying $R_0$ values.} The same parameter values as in Figure \ref{fig:global_3_panel} are used here, except the average $\langle R_0\rangle$ is 1.4 (top) and 2.7 (bottom). The lower $R_0$ shifts the peak in case numbers to late 2020 and early 2021, while a higher $R_0$ leads to a peak in early-mid 2020.}
-	\label{fig:global_3_panel_supp}
-\end{figure*}
-
-\newpage
-
-\begin{figure*}[h]
-	\centering
-	\includegraphics[width=0.8\columnwidth]{{figures/global_endemic_1.4}.pdf}
-	\includegraphics[width=0.8\columnwidth]{{figures/global_endemic_2.7}.pdf}
-	\caption{{\bf Transition to an endemic seasonal virus, with varying $R_0$ values.} These figures are plotted in the same manner as Figure \ref{fig:endemic}, but with $R_0$ values of 1.5 (left) and 2.7 (right). A lower $R_0$ allows for a relatively smoother transition to seasonality, particularly for Northern temperate regions, while a higher $R_0$ leads to a longer period of comparatively depressed circulation before the establishment of stable seasonality.}
-\end{figure*}
 
 \end{document}
