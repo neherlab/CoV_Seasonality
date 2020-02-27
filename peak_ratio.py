@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     R0_vals = np.linspace(1.5,3,8)
     theta_vals = np.array([10, 10.5, 11, 11.5, 0, 0.5, 1, 1.5, 2, 2.5])/12
-    for eps in [0.3, 0.5, 0.7]:
+    for eps in [0.15, 0.3, 0.5, 0.7]:
         ratio = []
         for R0 in R0_vals:
             for theta_NH in theta_vals:
@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
 
                 dt = 0.001
-                t0 = 2019.9
+                t0 = 2019.8
                 tmax = 2021.5
                 t, populations = trajectory(initial_population, t0, tmax, dt, params,
                                             resampling_interval=0, turnover=0)

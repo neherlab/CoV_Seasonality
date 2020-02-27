@@ -10,7 +10,7 @@ from matplotlib.colors import to_hex
 rec = 72   # 10 day serial interval
 incubation = 5/365
 nb_pts = 4
-R0s = np.linspace(1.3,2.5,nb_pts)
+R0s = np.linspace(1.3,3.0,nb_pts)
 migrations = np.logspace(-3, -1, nb_pts)
 N0,N1 = 6e7,1e8
 eps_hubei = 0.4
@@ -36,7 +36,7 @@ for ii,migration in enumerate(migrations):
         params = np.array(params)
         initial_population = np.array(populations)
         dt = 0.001
-        t0 = 2019.9
+        t0 = 2019.8
         tmax = 2021.5
         # start simulation
         t, populations = trajectory(initial_population, t0, tmax, dt, params,
@@ -65,6 +65,6 @@ for ii,migration in enumerate(migrations):
         axes[ii,jj].set_yscale('log')
 
 plt.tight_layout()
-plt.savefig('figures/scenario_subplot.pdf', format="pdf")
+plt.savefig(f'figures/scenario_subplot_{eps}.pdf', format="pdf")
 plt.show()
 

@@ -10,8 +10,8 @@ def dSIRdt_vec(S, E, I, t, params, turnover=0):
 
     S, I are vectors with one entry for each population
     t is time
-    params is an array of [[N, beta, rec, eps, theta, climate, containment, migration_rate],
-                           [N, beta, rec, eps, theta, climate, containment, migration_rate], ...]
+    params is an array of [[N, beta, rec, eps, theta, climate, containment, migration_rate, incubation_time],
+                           [N, beta, rec, eps, theta, climate, containment, migration_rate, incubation_time], ...]
 
     '''
     infection = params[:,1]*(1 - params[:,6]*I**3/(0.03**3+I**3))*S*I*(1+params[:,3]*np.cos(2*np.pi*(t - params[:,4])))
@@ -66,7 +66,7 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
     popsize_sigma = 1 # standard deviation of population size lognormal
     world_population = 7.6e9
     migration = 1e-2 # rate of moving per year anywhere
-    hubei_migration = 1e-3 # rate of moving per year anywhere
+    hubei_migration = 3e-3 # rate of moving per year anywhere
     migration_sigma = 1 # standard deviation migration rate lognormal
     theta_temperate_sigma = 0.1  # standard deviation of the distribution of peak x-missibility in temperate regions
     regions = {"Northern temperate":1, "Tropical":0,  "Southern temperate":-1}
@@ -80,7 +80,7 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
     #          population size, beta, rec, eps, theta, NH, containment, relative migration
     params = [[N0, R0*rec, rec, eps0, theta0, 1, containment_hubei, hubei_migration, incubation]]
     # initially fully susceptible with one case
-    initial_pops = [[1, 0, 100/N0]]
+    initial_pops = [[1, 0, 30/N0]]
 
     # construct other initial_pops
     for i in range(n_pops-1):
@@ -219,8 +219,8 @@ def plot_many_population_scenario(R0=2, t0=2019.9, tmax=2022, eps_temperate=0.5,
 
 
 if __name__ == '__main__':
-    t0_vec = [2019.8, 2019.9, 2020.0]
-    R0_vec = [1.4, 1.8, 2.7]
+    t0_vec = [2019.8, 2019.95, 2020.0]
+    R0_vec = [1.5, 2.2, 3.0]
 
     for t0, R0 in zip(t0_vec, R0_vec):
         plot_many_population_scenario(R0=R0, t0=t0, eps_temperate=0.5, R0_sigma=0.5, tmax=2022,

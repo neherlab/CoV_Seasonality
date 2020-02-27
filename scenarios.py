@@ -15,10 +15,10 @@ if __name__ == '__main__':
 
     # add Hubei population with parameters specified above
     #          population size, beta, rec, eps, theta, NH, containment, migration
-    params = [[N0, 1.8*rec, rec, eps_hubei, 0.0, 1,     0.5, migration, incubation_time],
-              [N1, 1.8*rec, rec, eps, 10.5/12, 1, 0.5, migration, incubation_time],
-              [N1, 1.8*rec, rec, eps, 0.5/12, 1,  0.5, migration, incubation_time],
-              [N1, 1.8*rec, rec, eps, 2.5/12, 1,  0.5, migration, incubation_time]]
+    params = [[N0, 2.2*rec, rec, eps_hubei, 0.0, 1,     0.5, migration, incubation_time],
+              [N1, 2.2*rec, rec, eps, 10.5/12, 1, 0.5, migration, incubation_time],
+              [N1, 2.2*rec, rec, eps, 0.5/12, 1,  0.5, migration, incubation_time],
+              [N1, 2.2*rec, rec, eps, 2.5/12, 1,  0.5, migration, incubation_time]]
     # initially fully susceptible with one case in Hubei, no cases in NH
     populations = [[1, 0, 1/N0], [1,0,0], [1,0,0], [1,0,0]]
     #total number of populations
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     # start simulation
     dt = 0.001
-    t0 = 2019.9
+    t0 = 2019.8
     tmax = 2021.5
     t, populations = trajectory(initial_population, t0, tmax, dt, params,
                                 resampling_interval=0, turnover=0)
