@@ -48,9 +48,12 @@
 \setcounter{table}{0}
 \renewcommand{\tablename}{Table S}
 \maketitle
-The SIR model introduced in equations \ref{eq:SIR} describes the fraction of susceptible $S(t)$ and infected individuals $I(t)$ in a population. 
-The fraction of recovered individuals $R$ is $R=1 - S - I$. 
-A simplified scheme of the model is presented in figure \ref{fig:schemeSIR} with constant transmissibility ($\forcing=0$ in equation \ref{eq:transmissibility}) and without emigration/influx ($e=0$ and $i=0$).
+The SIR model introduced in equations \ref{eq:SIR} describes the fraction of susceptible $S(t)$, exposed $E(t)$, and infected individuals $I(t)$ in a population. 
+The fraction of recovered individuals $R$ is $R=1 - S - E - I$. 
+
+An illustration of the model is presented in figure \ref{fig:schemeSIR} with constant transmissibility ($\forcing=0$ in equation \ref{eq:transmissibility}).
+
+When simplifying the model even further and combining the categories of exposed and infectious into one class of infected individuals, the model can be solved analytically.
 The simplified system has a steady state
 \begin{equation}
 \begin{split}
@@ -59,12 +62,13 @@ I_0 & = \frac{b(R_0-1)}{\beta}
 \end{split}
 \label{eq:fixed_point}
 \end{equation}
+where $\nu$ now is the inverse of average time from exposure to recovery.
 This steady state exists when the parameter $R_0 > 1$. For cases where $R_0 < 1$ the epidemic dies out as each infected person generate less than one subsequent infection. 
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.9\columnwidth]{figures/SIR}
-	\caption{Illustration of the SIR model used with its parameters.}\label{fig:schemeSIR}
+	\includegraphics[width=0.9\columnwidth]{figures/SEIR_sketch.pdf}
+	\caption{Illustration of the SIER model used with its parameters.}\label{fig:schemeSIR}
 \end{figure}
 
 
@@ -77,29 +81,33 @@ This behavior is intrinsic to the system and holds whenever transmissibility is 
 
 SIR models can show resonance phenomena when the period is about one or two years \citep{dushoff_dynamical_2004,chen_regular_2017}.
 Resonance is less likely when the period is much longer than the the period of annual forcing.
-Fig.~\ref{fig:intrinsicPeriod} shows the intrinsic period for the parameter range considered. 
-In the center of the graph the intrinsic period is around 3 years, suggesting that resonance is not strong.
+Fig.~\ref{fig:intrinsicPeriod} shows the intrinsic period for the parameter range considered and two durations of immunity (left: 10 years, right: 5 years). 
+Our parameters choices for $\nu$ $\beta$ lie in the center of the graphs in Fig.~\ref{fig:intrinsicPeriod}. 
+For $b=0.1/y$, we expect an intrinsic period is around 3 years, suggesting that resonance is unlikely and if it occurs would lock into 3 year patters.
+For $b=0.2/y$, the intrinsic period is closer to 2 years and biennial resonance is possible. 
+The data, however, don't suggest strong biennial patterns such that we don't think resonance is a major contributor to seasonality.
 
 In a fully susceptible population, the number of infected individuals initially grows as $I(t)\sim e^{(\beta-\nu-b)t} = e^{(R_0-1)t/(\nu+b)}$.
 The doubling time is $\tau_2 = (\nu+b)\log(2)/(R_0-1)$.
 Since $b\ll \nu$, we can safely neglect $b$ in the early phase of the pandemic, but it is important when interpreting endemic seasonal CoV data. 
 
 
-\begin{figure}[htb]
+\begin{figure*}[htb]
 	\centering
-	\includegraphics[width=0.9\columnwidth]{figures/Period_phase_space}
-	\caption{Length of the intrinsic period of the SIR model for $\beta$ and $\nu$ values in the range explored in this paper. The duration of immunity is assumed to be $10$ years. The dark blue region corresponds to $R_0<1$. }
+	\includegraphics[width=0.9\columnwidth]{figures/Period_phase_space_b_0.1.pdf}
+	\includegraphics[width=0.9\columnwidth]{figures/Period_phase_space_b_0.2.pdf}
+\caption{Length of the intrinsic period of the SIR model for $\beta$ and $\nu$ values in the range explored in this paper. The duration of immunity is assumed to be $10$ years in the panel on the left and 5 years in the panel on the right. The dark blue region corresponds to $R_0<1$. }
 	\label{fig:intrinsicPeriod}
-\end{figure}
+\end{figure*}
 
 
 \subsection*{Migration between subpopulations}
 
-The term $i$ and $e$ in equation \ref{eq:SIR} represent the influx and emigration in a population which we model as an exchange of infected individuals while ignoring the migration of susceptible or recovered individuals.
+In the model for seasonal CoVs, we account for the exchange of CoVs with the rest of the world through an additional transition of susceptibles to the exposed category with a rate that is the product of a migation rate and the probability of being exposed abroad. 
+Beyond that, no additions to Eq.~\ref{eq:SIR} are necessary.
+
+For the multipopulation models of SARS-CoV-2 pandemics, we model migration as loss terms to each category with a population specific migration rate, followed by redistributions of the pooled migrants to random population according the population specific migration rate. 
 Such migration is operating in Figures \ref{fig:nCov_predictions}, \ref{fig:global_3_panel} and \ref{fig:endemic}. 
-A proportion $e$ of the infected people are removed due to emigration while an influx $i$ is added.
-The influx $i$ of each population is computed as the product of the total number of infected people in all population, the migration rate of the population in question, and its size. 
-In that sense, the infected persons form a global ``reservoir'' from which each population takes its influx.
 
 \subsection*{Effect of infection control measures}
 The SIR model as formulated in Eq.~\ref{eq:SIR} accounts for seasonality but otherwise assumes the transmission dynamics is constant. 
@@ -107,9 +115,10 @@ In reality, individuals change their behavior when they are aware of a contagiou
 This in particularly true for the current SARS-CoV-2 outbreak where tens of millions of people are under quarantine measures and travel restrictions.
 In order to account for such behavioral changes, we add a factor $H$ to equation \ref{eq:SIR} that modulates transmission:
 \begin{equation}
-\frac{d}{dt} I =  -(\nu+b+e) I + (1-H)\beta S I + i
+\frac{d}{dt} I =  -(\nu+b) I + (1-H)\beta S I + i
 \end{equation}
-where $H = c\cdot\frac{I^3}{(K^3+I^3)}$ with $c$ the containment value. The term $H$ is a Hill function of order 3 and inflection point $K$. 
+where $H = c\cdot\frac{I^3}{(K^3+I^3)}$ with $c$ the value of the containment parameter. 
+The term $H$ is a Hill function of order 3 and inflection point $K$. 
 We use this to model a decrease in the rate of new infection smoothly decrease by a factor $c$. 
 We used $c=0.5$ and $K=0.03$, implying that once a disease is at a prevalence of 3\%, containment measures reduce transmission by 50\%.
 The effect of prevention and control is difficult to assess at present and will certainly vary in time and space. 
