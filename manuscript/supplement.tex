@@ -50,8 +50,15 @@
 \maketitle
 The SIR model introduced in equations \ref{eq:SIR} describes the fraction of susceptible $S(t)$, exposed $E(t)$, and infected individuals $I(t)$ in a population. 
 The fraction of recovered individuals $R$ is $R=1 - S - E - I$. 
+An illustration of the model is presented in figure \ref{fig:schemeSIR}.
 
-An illustration of the model is presented in figure \ref{fig:schemeSIR} with constant transmissibility ($\forcing=0$ in equation \ref{eq:transmissibility}).
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.9\columnwidth]{figures/SEIR_sketch.pdf}
+	\caption{Illustration of the SEIR model used with its parameters.}\label{fig:schemeSIR}
+\end{figure}
+
+
 
 When simplifying the model even further and combining the categories of exposed and infectious into one class of infected individuals, the model can be solved analytically.
 The simplified system has a steady state
@@ -65,14 +72,8 @@ I_0 & = \frac{b(R_0-1)}{\beta}
 where $\nu$ now is the inverse of average time from exposure to recovery.
 This steady state exists when the parameter $R_0 > 1$. For cases where $R_0 < 1$ the epidemic dies out as each infected person generate less than one subsequent infection. 
 
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.9\columnwidth]{figures/SEIR_sketch.pdf}
-	\caption{Illustration of the SIER model used with its parameters.}\label{fig:schemeSIR}
-\end{figure}
-
-
-For our analysis of seasonal CoVs, it is instructive to study the stability of this steady state and show that the quantities $[S,I]$ tend to show damped oscillations around the fixed points in Eq.~\ref{eq:fixed_point} with a period
+For our analysis of seasonal CoVs, it is instructive to study the stability of this steady state of the simplified SIR (not SEIR) model. 
+It is easy to show that the quantities $[S,I]$ tend to show damped oscillations around the fixed points in Eq.~\ref{eq:fixed_point} with a period
 \begin{equation}
 T = \frac{4\pi}{\sqrt{4b(\nu(R_0-1) - b) - R_0^2b^2}}
 \label{eq:period}
@@ -87,9 +88,11 @@ For $b=0.1/y$, we expect an intrinsic period is around 3 years, suggesting that 
 For $b=0.2/y$, the intrinsic period is closer to 2 years and biennial resonance is possible. 
 The data, however, don't suggest strong biennial patterns such that we don't think resonance is a major contributor to seasonality.
 
+Similarly, in the simplified SIR (not SEIR) model, the initial growth of the number of cases can be expressed analytically.
 In a fully susceptible population, the number of infected individuals initially grows as $I(t)\sim e^{(\beta-\nu-b)t} = e^{(R_0-1)t/(\nu+b)}$.
 The doubling time is $\tau_2 = (\nu+b)\log(2)/(R_0-1)$.
 Since $b\ll \nu$, we can safely neglect $b$ in the early phase of the pandemic, but it is important when interpreting endemic seasonal CoV data. 
+For detailed discussion of the effect of generation times and incubation periods on the initial exponential growth, see \citep{wallinga_how_2007}.
 
 
 \begin{figure*}[htb]
@@ -123,6 +126,7 @@ We use this to model a decrease in the rate of new infection smoothly decrease b
 We used $c=0.5$ and $K=0.03$, implying that once a disease is at a prevalence of 3\%, containment measures reduce transmission by 50\%.
 The effect of prevention and control is difficult to assess at present and will certainly vary in time and space. 
 
+\bibliography{bib}
 \begin{figure}
     \centering
     \includegraphics[width=0.5\textwidth]{figures/fraction_positive_HKU1_OC43.pdf}

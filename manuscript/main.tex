@@ -62,13 +62,12 @@
 \date{\today}
 
 \begin{abstract}
-A novel coronavirus (SARS-CoV-2) first detected in Wuhan, China, has spread rapidly since December 2019, causing more than 80,000 confirmed infections and 2,700 fatalities (as of Feb 27, 2020). Imported cases and transmission clusters of various sizes have been reported globally suggesting a pandemic is likely.
+A novel coronavirus (SARS-CoV-2) first detected in Wuhan, China, has spread rapidly since December 2019, causing more than 100,000 confirmed infections and 4,000 fatalities (as of Mar 10, 2020). Imported cases and transmission clusters of various sizes have been reported globally suggesting a pandemic is likely.
 
 Here, we explore how seasonal variation in transmissibility could modulate a SARS-CoV-2 pandemic.
 Data from routine diagnostics show a strong and consistent seasonal variation of the four endemic coronaviruses (229E, HKU1, NL63, OC43) and we parameterize our model for SARS-CoV-2 using these data.
 The model allows for many subpopulations of different size with variable parameters.
 Simulations of different scenarios show that plausible parameters result in a small peak in early 2020 in temperate regions of the Northern Hemisphere and a larger peak in winter 2020/2021. 
-A smaller range of parameters suggests a dominant peak in the dominant first half of 2020 or two peaks of similar magnitude. 
 Variation in transmission and migration rates can result in substantial variation in prevalence between regions.
 
 While the uncertainty in parameters is large, the scenarios we explore show that transient reductions in the incidence rate might be due to a combination of seasonal variation and infection control efforts but do not necessarily mean the epidemic is contained. 
@@ -80,10 +79,10 @@ The likely aggregated effect of seasonal variation, infection control measures, 
 
 % \section{Introduction}
 
-On Jan 30, 2020, the World Health Organisation (WHO) declared the spread of a new coronavirus, SARS-CoV-2 \citep{ICTV_SARS-CoV-2}, as a public health emergency of international concern \citep{WHO_statement}.
+On Jan 30, 2020, the World Health Organisation (WHO) declared the spread of a new coronavirus, SARS-CoV-2 \citep{ICTV_SARS-CoV-2}, as a public health emergency of international concern \citep{WHO_statement}, and on March 11 as a pandemic \citep{WHOpandemic}.
 The virus was first identified in patients with pneumonia in the city of Wuhan in the Hubei province, China, in December 2019 \citep{Liangjun2020rna}.
-The clinical presentation of the illness caused by SARS-CoV-2, called COVID-19, appears to range from mild or asymptomatic to severe and fatal respiratory illness \citep{WHO_situation_report23}, but the exact spectrum of disease presentation is still unclear. 
-The potential for global spread, i.e.~a pandemic, of SARS-CoV-2 is currently not known, but the virus has spread at an alarming rate in Wuhan, the epicenter of the outbreak. Furthermore, the virus has spread to all provinces of China and small clusters of local spread have been reported from several countries, e.g. Singapore, Germany, and the UK \citep{WHO_situation_report23, rothe2020transmission, MOH_Singapore}. 
+The clinical presentation of the illness caused by SARS-CoV-2, called COVID-19, appears to range from mild or asymptomatic to severe and fatal respiratory illness \citep{WHO_China2020joint}, but the exact spectrum of disease presentation is still unclear. 
+The potential for global spread, i.e.~a pandemic, of SARS-CoV-2 is currently not known, but the virus has spread at an alarming rate in Wuhan, the epicenter of the outbreak. Furthermore, the virus has spread to all provinces of China and small clusters of local spread have been reported from several countries, e.g. Singapore, Germany, the UK, and Italy \citep{WHO_situation_report23, rothe2020transmission, MOH_Singapore, ECDC_report9March}. 
 
 The basic reproduction number ($R_0$), which describes the average number of new infections per infected SARS-CoV-2 case, has been estimated to be around $R_0 = 2 - 3$ (2.2  with 90\% high density interval 1.4–3.8 \citep{Riou2020pattern} or 2.7 with a 95\% CrI of 2.47–2.86 \citep{wu_nowcasting_2020}).
 Higher estimates have also been reported \citep{yang_epidemiological_2020,sanche_novel_2020}. Importantly, $R_0$ is not a biological constant for a pathogen, but is affected by factors such as environmental conditions and the behaviour of infected individuals. One such environmental factor is climate which modulates transmissibility throughout the year. 
@@ -109,6 +108,7 @@ In the period of Jan 1, 2010 to Nov 5, 2017, the coronavirus diagnostic was done
 
 The fraction of tests that were positive for the four seasonal CoVs showed a strong and consistent seasonal variation, see Fig.~\ref{fig:seasonal_CoV}. 
 From December to April approximately 2\%  of tests were positive, while less than 0.2\% of tests were positive between July to September, i.e.~a 10-fold difference (Fig.~\ref{fig:seasonal_CoV}, right).
+While the fraction of positive tests is not a direct measure of prevalence, it is a reasonable proxy that we expect to be well correlated with prevalence. 
 The strength of variation of the transmission rate through the year could be of high relevance to the spread of SARS-CoV-2 in 2020 and following years. 
 
 \begin{figure*}
@@ -125,7 +125,7 @@ We consider simple SIR models \citep{kermack_contributions_1991} with an additio
 \begin{equation}
 \begin{split}
 \frac{d}{dt} S & = b(1-S) - \beta(t) S I \\
-\frac{d}{dt} E & = \beta(t) S I - \mu E\\
+\frac{d}{dt} E & = \beta(t) S I - (\mu +b) E\\
 \frac{d}{dt} I & = \mu E - (\nu+b) I \\
 R & = 1-S-I-E
 \end{split}
@@ -147,7 +147,7 @@ For simulations of the pandemic, we will add an additional term to $\beta(t)$ th
 \begin{figure}
     \centering
     \includegraphics[width=\columnwidth]{figures/fit_2.3.pdf}
-    \caption{{\bf Compatibility of SIER model trajectories with observations.} The heatmap shows the inverse mean squared deviation between the model trajectories and the observed seasonal forcing in seasonal CoV prevalence. Model and observations are compatible (yellow shading) in a region of parameter values corresponding to low migration/weak seasonality and second region at high migration/strong seasonality. Migration refers to the rate per year of a susceptible to return from a abroad with a CoV infection.}
+    \caption{{\bf Compatibility of SEIR model trajectories with observations.} The heatmap shows the inverse mean squared deviation between the model trajectories and the observed seasonal forcing in seasonal CoV prevalence. Model and observations are compatible (yellow shading) in a region of parameter values corresponding to low migration/weak seasonality and second region at high migration/strong seasonality. Migration refers to the rate per year of a susceptible to return from a abroad with a CoV infection.}
     \label{fig:parameter_seasonal}
 \end{figure}
 
@@ -279,8 +279,8 @@ i) that the outbreak will develop into a pandemic,
 ii) that the transmissibility of SARS-CoV-2 shows seasonal variability of sufficient strength (range $\forcing=0.3$ to $0.7$), and  
 iii) that parameters like $R_0$ estimated from the early phase of the outbreak are comparable in other populations. 
 
-These assumptions are not implausible but not certain: cases of SARS-CoV-2 has been in several countries in Asia apart from China, as well as in Europe, Africa, North America, and Australia \citep{WHO_situation_report37}, and mild or asymptomatic cases make detection and thus prevention of spread by isolation challenging, \textit{e.g.} airport screening as a preventive measure is unlikely to prevent spread and local seeding \citep{quilty2020effectiveness}. 
-Person-to-person transmission of the virus has been documented in several countries outside of China, including large outbreaks in Iran, South Korea, and Italy \citep{ECDC_23feb}. 
+These assumptions are not implausible but not certain: cases of SARS-CoV-2 has been in several countries in Asia apart from China, as well as in Europe, Africa, North America, and Australia \citep{WHO_situation_report50}, and mild or asymptomatic cases make detection and thus prevention of spread by isolation challenging, \textit{e.g.} airport screening as a preventive measure is unlikely to prevent spread and local seeding \citep{quilty2020effectiveness}. 
+Person-to-person transmission of the virus has been documented in several countries outside of China, including large outbreaks in Iran, South Korea, and Italy \citep{WHO_situation_report50}. 
 It is likely that not all exported cases have been detected, and some may have seeded outbreaks outside of China that have yet to be detected. 
 
 The seasonal CoVs show a strong and consistent seasonal variation, and modeling suggests that this requires strong variation in transmissibility throughout the year.
