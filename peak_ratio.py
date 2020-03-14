@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from compartment_model import dSIRdt_vec
+from compartment_model import trajectory
 from scipy.stats import poisson
 import seaborn as sns
 
@@ -21,7 +21,8 @@ month_lookup = {
 
 if __name__ == '__main__':
 
-    rec = 36   # 10 day serial interval
+    rec = 72   # recovery rate 1/2 weeks, results in an average 2weeks/R0 average seasonal interval.
+    incubation = 5/365
     migration = 1e-2 # rate of moveing per year
     N0,N1 = 6e7,1e8
     eps_hubei = 0.4
@@ -32,43 +33,37 @@ if __name__ == '__main__':
 
     R0_vals = np.linspace(1.5,3,8)
     theta_vals = np.array([10, 10.5, 11, 11.5, 0, 0.5, 1, 1.5, 2, 2.5])/12
-    for eps in [0.3, 0.5, 0.7]:
+    for eps in [0.15, 0.3, 0.5, 0.7]:
         ratio = []
         for R0 in R0_vals:
             for theta_NH in theta_vals:
                 print(eps, R0,theta_NH)
                 # initially fully susceptible with one case in Hubei, no cases in NH
-                populations = [np.array([[1, 1/N0], [1,0]])]
-                params = np.array([[N0, R0_hubei*rec, rec, eps_hubei, theta_hubei, 1, containment_hubei, migration],
-                                   [N1, R0*rec, rec, eps, theta_NH, 1, containment_NH, migration]])
+                initial_population = np.array([[1, 0, 100/N0], [1,0, 0]])
+                params = np.array([[N0, R0_hubei*rec, rec, eps_hubei, theta_hubei, 1, containment_hubei, migration,incubation],
+                                   [N1, R0*rec, rec, eps, theta_NH, 1, containment_NH, migration, incubation]])
 
                 n_pops = len(params)
 
 
-                t = [2019.8]
                 dt = 0.001
+                t0 = 2019.8
                 tmax = 2021.5
-                while t[-1]<tmax:
-                    dS, dI = dSIRdt_vec(populations[-1][:,0], populations[-1][:,1], t[-1], params)
-                    populations.append(populations[-1] + dt*np.array([dS,dI]).T)
-
-                    I_tot = (params[:,0]*populations[-1][:,1]).sum()
-                    populations[-1][:,1] += poisson.rvs(I_tot/n_pops*dt*params[:,7])/params[:,0]
-                    populations[-1][populations[-1][:,1]<1/params[:,0],1] = 0
-                    t.append(t[-1]+dt)
-
-                NH = np.array(populations)[:,1,1][::10]
-                peaks = np.where((NH[1:-1]>NH[2:])&(NH[1:-1]>NH[:-2])&(NH[1:-1]>1000/N1))[0]
+                t, populations = trajectory(initial_population, t0, tmax, dt, params,
+                                            resampling_interval=0, turnover=0)
+                spacing=30
+                NH = np.array(populations)[:,1,2][::spacing]
+                peaks = np.where((NH[1:-1]>NH[2:])&(NH[1:-1]>NH[:-2])&(NH[1:-1]>10000/N1))[0]
                 if len(peaks)==2:
                     ratio.append(NH[peaks[0]]/NH[peaks[1]])
                 elif len(peaks)==1:
-                    print(t[peaks[0]*10])
-                    if (t[peaks[0]*10])%1<(theta_NH + 0.5)%1:
+                    print(t[peaks[0]*spacing])
+                    if (t[peaks[0]*spacing])%1<(theta_NH + 0.5)%1:
                         ratio.append(1000)
                     else:
                         ratio.append(0.001)
                 else:
-                    import ipdb; ipdb.set_trace()
+                    # import ipdb; ipdb.set_trace()
                     print("ambiguous peaks")
                     ratio.append(np.nan)
 

@@ -10,9 +10,12 @@ def get_period(B,N,b):
 
 
 # Parameters
-beta_min, beta_max = 0.5*72, 1.5*72
-nu_min, nu_max = 0.5*36, 1.5*36
-b=0.1
+R0 = 2.2
+nu = 36
+beta = nu*R0
+nu_min, nu_max = 0.5*nu, 1.5*nu
+beta_min, beta_max = 0.5*beta, 1.5*beta
+b=0.2
 nb_pts = 100
 betas = np.linspace(beta_min, beta_max, nb_pts)
 nus = np.linspace(nu_min, nu_max, nb_pts)
@@ -31,5 +34,5 @@ c.set_label(r"$T$", fontsize=fontsize)
 plt.xlabel(r"$\beta$", fontsize=fontsize)
 plt.ylabel(r"$\nu$", fontsize=fontsize)
 plt.tight_layout()
-plt.savefig("figures/Period_phase_space.pdf", format='pdf')
+plt.savefig(f"figures/Period_phase_space_b_{b}.pdf", format='pdf')
 #plt.show()
